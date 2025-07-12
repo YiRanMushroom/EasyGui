@@ -39,3 +39,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         "VULKAN_HPP_RAII_NO_EXCEPTIONS=1"
         "VULKAN_HPP_CPP_VERSION=23"
 )
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+        src)
