@@ -982,6 +982,68 @@ namespace EasyGui {
         m_SwapChain.clear();
     }
 
+    void Window::DispatchNormalEvent(SDL_Event sdlEvent) {
+        switch (sdlEvent.type) {
+            case SDL_EVENT_KEY_DOWN: {
+                KeyPressedEvent event{
+                    Key::KeyCode(sdlEvent.key.key),
+                    sdlEvent.key.repeat
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
+                    }
+                }
+                break;
+            }
+            case SDL_EVENT_KEY_UP: {
+                KeyReleasedEvent event{
+                    Key::KeyCode(sdlEvent.key.key)
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
+                    }
+                }
+                break;
+            }
+            case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+                MouseButtonPressedEvent event{
+                    Mouse::MouseCode(sdlEvent.button.button)
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
+                    }
+                }
+                break;
+            }
+            case SDL_EVENT_MOUSE_BUTTON_UP: {
+                MouseButtonReleasedEvent event{
+                    Mouse::MouseCode(sdlEvent.button.button)
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
+                    }
+                }
+                break;
+            }
+            case SDL_EVENT_MOUSE_MOTION: {
+                MouseMovedEvent event{
+                    sdlEvent.motion.x,
+                    sdlEvent.motion.y
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     void Window::MainLoop() {
         SDL_SetWindowPosition(m_Window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
         SDL_ShowWindow(m_Window);
@@ -997,13 +1059,53 @@ namespace EasyGui {
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
                 ImGui_ImplSDL3_ProcessEvent(&event);
-                if (event.type == SDL_EVENT_QUIT)
+                if (event.type == SDL_EVENT_QUIT) {
                     done = true;
-                if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID ==
-                    SDL_GetWindowID(m_Window))
+                    WindowCloseEvent event{};
+                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                        if ((*reverseIt)->OnEvent(event)) {
+                            break;
+                        }
+                    }
+                } else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID ==
+                           SDL_GetWindowID(m_Window)) {
                     done = true;
+                    WindowCloseEvent event{};
+                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                        if ((*reverseIt)->OnEvent(event)) {
+                            break;
+                        }
+                    }
+                } else if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_MINIMIZED ||
+                           event.type == SDL_EVENT_WINDOW_MAXIMIZED) {
+                    int width, height;
+                    width = event.window.data1;
+                    height = event.window.data2;
+
+                    if (width > 0 && height > 0) {
+                        m_ShouldUpdate = true;
+                        if (width != m_SwapChainExtent.width || height != m_SwapChainExtent.height) {
+                            RecreateSwapChain();
+                        }
+                    } else {
+                        m_ShouldUpdate = false;
+                    }
+
+                    WindowResizeEvent event{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                        if ((*reverseIt)->OnEvent(event)) {
+                            break;
+                        }
+                    }
+                } else if (event.type == SDL_EVENT_WINDOW_RESTORED) {
+                    m_ShouldUpdate = true;
+                } else DispatchNormalEvent(event);
             }
 
+            if (!m_ShouldUpdate) {
+                continue;
+                std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            }
             DrawFrame();
         }
 

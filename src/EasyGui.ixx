@@ -164,14 +164,16 @@ namespace EasyGui {
 
         void CleanupSwapChain();
 
+        void DispatchNormalEvent(SDL_Event sdlEvent);
+
     public:
         void MainLoop();
 
         void Cleanup();
 
         void OnUpdate();
-    private:
 
+    private:
         vk::raii::Context m_Context;
         vk::raii::Instance m_Instance{nullptr};
 
@@ -219,6 +221,13 @@ namespace EasyGui {
         };
 
     public:
+        template<std::derived_from<IUpdatableLayer> T>
+        std::shared_ptr<T> EmplaceLayer(auto &&... args) {
+            auto layer = std::make_shared<T>(std::forward<decltype(args)>(args)...);
+            PushLayer(layer);
+            return layer;
+        }
+
         // override all IBasicContext methods
         SDL_Window *GetWindow() const { return m_Window; }
         const vk::raii::Context &GetRaiiContext() { return m_Context; }
