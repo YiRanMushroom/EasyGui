@@ -5,3 +5,6 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
+
+#undef max
+#undef min
