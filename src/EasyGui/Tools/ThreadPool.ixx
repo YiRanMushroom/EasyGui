@@ -1,4 +1,4 @@
-export module ThreadPool;
+export module EasyGui.Tools.ThreadPool;
 
 import std.compat;
 
@@ -67,9 +67,14 @@ namespace EasyGui {
         }
 
         ~ThreadPool() {
+            if (m_ShouldStop) {
+                m_WorkerThreads.clear();
+                return;
+            }
+
             m_ShouldStop = true;
             m_Condition.notify_all();
-            for (auto &thread : m_WorkerThreads) {
+            for (auto &thread: m_WorkerThreads) {
                 if (thread.joinable()) {
                     thread.join();
                 }
@@ -77,15 +82,21 @@ namespace EasyGui {
         }
 
         void DetachAll() {
-            for (auto& thread : m_WorkerThreads)
-                thread.detach();
+            m_ShouldStop = true;
+            m_Condition.notify_all();
+            for (auto &thread: m_WorkerThreads) {
+                if (thread.joinable()) {
+                    thread.detach();
+                }
+            }
+            m_WorkerThreads.clear();
         }
 
     private:
-        std::vector<std::jthread> m_WorkerThreads;
-        std::condition_variable m_Condition;
-        std::mutex m_Mutex;
-        std::queue<std::function<void()>> m_Tasks;
+        std::vector<std::jthread> m_WorkerThreads{};
+        std::condition_variable m_Condition{};
+        std::mutex m_Mutex{};
+        std::queue<std::function<void()>> m_Tasks{};
         std::atomic_bool m_ShouldStop{false};
     };
 }
