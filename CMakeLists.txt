@@ -15,7 +15,6 @@ target_sources(${PROJECT_NAME} PUBLIC
         TYPE CXX_MODULES
         BASE_DIRS src
         FILES ${MODULE_FILES})
-target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES})
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
@@ -31,6 +30,9 @@ set(IMGUI_BACKEND_RENDERER "vulkan" CACHE STRING "ImGui backend renderer")
 set(IMGUI_BACKEND_PLATFORM "sdl3" CACHE STRING "ImGui backend platform")
 add_subdirectory(vendor/imgui)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
+
+add_subdirectory(vendor/soloud)
+target_link_libraries(${PROJECT_NAME} PUBLIC SoLoud)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         "VULKAN_HPP_NO_STRUCT_CONSTRUCTORS=1"
