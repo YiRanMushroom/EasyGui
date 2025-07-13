@@ -142,8 +142,6 @@ namespace EasyGui {
 
         void CreateImageViews();
 
-        // void CreateSampler();
-
         void InitImGui();
 
         void BeginImGuiFrame();
