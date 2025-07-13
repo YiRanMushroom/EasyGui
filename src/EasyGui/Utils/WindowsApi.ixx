@@ -5,6 +5,10 @@ export import <Windows.h>;
 import <shlobj.h>;
 import <direct.h>;
 
+#undef MAX_PATH
+
+constexpr size_t MAX_PATH = 1024;
+
 namespace EasyGui::Windows {
     export class PreserveWorkingDirectory {
     public:
