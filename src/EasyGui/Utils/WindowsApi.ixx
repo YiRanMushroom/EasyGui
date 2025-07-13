@@ -9,12 +9,10 @@ namespace EasyGui::Windows {
     export class PreserveWorkingDirectory {
     public:
         PreserveWorkingDirectory() {
-            // use _wgetcwd to get the current working directory
             _wgetcwd(m_OriginalDirectory, MAX_PATH);
         }
 
         ~PreserveWorkingDirectory() {
-            // use _wchdir to restore the original working directory
             _wchdir(m_OriginalDirectory);
         }
 
@@ -57,12 +55,12 @@ namespace EasyGui::Windows {
         return result;
     }
 
-    export std::optional<std::string> OpenDirectoryDialog() {
+    export std::optional<std::string> OpenDirectoryDialog(std::wstring_view title = L"Select a folder") {
         PreserveWorkingDirectory preserveDir;
         wchar_t path[MAX_PATH] = L"";
 
         BROWSEINFOW bi = {0};
-        bi.lpszTitle = L"Select a folder";
+        bi.lpszTitle = title.data();
         bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
         LPITEMIDLIST pidl = SHBrowseForFolderW(&bi);
 
@@ -74,20 +72,18 @@ namespace EasyGui::Windows {
         return {};
     }
 
-        export struct ProcessOutput {
-        std::string stdout_str;
-        std::string stderr_str;
+    export struct ProcessOutput {
+        std::wstring stdout_str;
+        std::wstring stderr_str;
     };
 
     // ShowErrorMessage: UTF-8 support
-    export void ShowErrorMessage(const char *message, const char *title = "Error") {
-        auto wmsg = Utf8ToUtf16(message);
-        auto wtitle = Utf8ToUtf16(title);
-        MessageBoxW(NULL, wmsg.c_str(), wtitle.c_str(), MB_OK | MB_ICONERROR);
+    export void ShowErrorMessage(std::wstring_view message, std::wstring_view title = L"Error") {
+        MessageBoxW(NULL, message.data(), title.data(), MB_OK | MB_ICONERROR);
     }
 
     // RunProcessWithOutput: UTF-8 support
-    export std::optional<ProcessOutput> RunProcessWithOutput(const std::string &cmd) {
+    export std::optional<ProcessOutput> RunProcessWithOutput(const std::wstring_view cmd) {
         HANDLE outRead, outWrite, errRead, errWrite;
         SECURITY_ATTRIBUTES sa{sizeof(sa), NULL, TRUE};
 
@@ -105,14 +101,9 @@ namespace EasyGui::Windows {
         si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
         PROCESS_INFORMATION pi{};
-        // Convert UTF-8 command to UTF-16
-        std::wstring wcmd = Utf8ToUtf16(cmd);
-        // CreateProcessW requires non-const buffer
-        std::vector<wchar_t> cmdBuf(wcmd.begin(), wcmd.end());
-        cmdBuf.push_back(L'\0');
 
         BOOL success = CreateProcessW(
-            NULL, cmdBuf.data(), NULL, NULL, TRUE,
+            NULL, const_cast<wchar_t *>(cmd.data()), NULL, NULL, TRUE,
             CREATE_NO_WINDOW, NULL, NULL, &si, &pi
         );
 
@@ -122,7 +113,8 @@ namespace EasyGui::Windows {
         if (!success) {
             CloseHandle(outRead);
             CloseHandle(errRead);
-            ShowErrorMessage("Failed to create process. Please check if all required files are present and the command is correct.");
+            ShowErrorMessage(
+                L"Failed to create process. Please check if all required files are present and the command is correct.");
             return std::nullopt;
         }
 
@@ -148,10 +140,13 @@ namespace EasyGui::Windows {
 
         if (exitCode != 0) {
             ShowErrorMessage(
-                ("Process exited abnormally. Exit code: " + std::to_string(exitCode) +
-                 ". Please report this issue to the vendor.").c_str());
+                std::format(L"Process exited abnormally. Exit code: {}. Please report this issue to the vendor.",
+                            exitCode).c_str());
         }
 
-        return ProcessOutput{std::move(outStr), std::move(errStr)};
+        return ProcessOutput{
+            Utf8ToUtf16(outStr),
+            Utf8ToUtf16(errStr)
+        };
     }
 }
