@@ -6,8 +6,8 @@ export import EasyGui.Core.KeyCodes;
 export import EasyGui.Core.MouseCodes;
 export import EasyGui.Event.AllEvents;
 
-import <EasyGui/Lib_SDL3.hpp>;
-import <EasyGui/Lib_Vulkan.hpp>;
+import "EasyGui/Lib_SDL3.hpp";
+import "EasyGui/Lib_Vulkan.hpp";
 
 namespace EasyGui {
     export constexpr bool IsPresented() {
@@ -18,12 +18,14 @@ namespace EasyGui {
     public:
         virtual ~IUpdatableLayer() = default;
 
-        virtual void OnUpdate() = 0;
+        virtual void OnUpdate() {}
 
-        virtual void OnSubmitCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<std::any> &dependentContexts) =
-        0;
+        virtual void OnSubmitCommandBuffer(vk::CommandBuffer commandBuffer,
+                                           std::vector<std::any> &dependentContexts) {}
 
-        virtual bool OnEvent(const Event &event) = 0;
+        virtual bool OnEvent(const Event &event) {
+            return false;
+        }
     };
 
     export class GlobalContext {

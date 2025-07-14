@@ -59,7 +59,7 @@ namespace EasyGui::Windows {
         return result;
     }
 
-    export std::optional<std::string> OpenDirectoryDialog(std::wstring_view title = L"Select a folder") {
+    export std::optional<std::wstring> OpenDirectoryDialog(std::wstring_view title = L"Select a folder") {
         PreserveWorkingDirectory preserveDir;
         wchar_t path[MAX_PATH] = L"";
 
@@ -70,7 +70,7 @@ namespace EasyGui::Windows {
 
         if (pidl && SHGetPathFromIDListW(pidl, path)) {
             CoTaskMemFree(pidl);
-            return Utf16ToUtf8(path);
+            return path;
         }
         if (pidl) CoTaskMemFree(pidl);
         return {};

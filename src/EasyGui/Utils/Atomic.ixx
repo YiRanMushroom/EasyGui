@@ -38,6 +38,10 @@ namespace EasyGui {
                 m_Atomic->m_Value = value;
             }
 
+            void Set(T&& value) {
+                m_Atomic->m_Value = std::move(value);
+            }
+
             T& Get() {
                 return m_Atomic->m_Value;
             }
@@ -64,8 +68,9 @@ namespace EasyGui {
         T m_Value;
     };
 
-    auto MakeAtomic(auto&&... args) {
-        return Atomic<std::decay_t<decltype(args)>>{std::forward<decltype(args)>(args)...};
+    export template<typename T, typename ...Args>
+    Atomic<T> MakeAtomic(Args&&... args) {
+        return Atomic<T>{std::forward<Args>(args)...};
     }
 
     export template<typename T>
@@ -117,6 +122,11 @@ namespace EasyGui {
         std::shared_ptr<Atomic<T>> m_Atomic;
     };
 
+    export template<typename T, typename ...Args>
+    SharedAtomic<T> MakeSharedAtomic(Args&&... args) {
+        return SharedAtomic<T>{std::make_shared<Atomic<T>>(std::forward<Args>(args)...)};
+    }
+
     template<typename T>
     class WeakAtomic {
     public:
@@ -130,7 +140,7 @@ namespace EasyGui {
         WeakAtomic(std::weak_ptr<Atomic<T>>&& atomic) : m_Atomic(std::move(atomic)) {
         }
 
-        SharedAtomic<T> Lock() {
+        SharedAtomic<T> Lock() const {
             return {m_Atomic.lock()};
         }
 
