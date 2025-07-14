@@ -122,6 +122,8 @@ namespace EasyGui {
 
         void CreateLogicalDevice();
 
+        void CreateAllocator();
+
         void CreateSurface();
 
         QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physicalDevice);
@@ -182,6 +184,9 @@ namespace EasyGui {
         vk::raii::DebugUtilsMessengerEXT m_DebugMessenger{nullptr};
         vk::raii::PhysicalDevice m_PhysicalDevice{nullptr};
         vk::raii::Device m_Device{nullptr};
+
+        vma::UniqueAllocator m_Allocator;
+
         vk::raii::Queue m_GraphicsQueue{nullptr};
         vk::raii::Queue m_PresentQueue{nullptr};
         vk::raii::SwapchainKHR m_SwapChain{nullptr};
@@ -217,7 +222,9 @@ namespace EasyGui {
         };
 
         const inline static std::vector<const char *> s_DeviceExtensions = {
-            vk::KHRSwapchainExtensionName
+            vk::KHRSwapchainExtensionName,
+            vk::KHRMapMemory2ExtensionName,
+            vk::EXTMemoryBudgetExtensionName
         };
 
     public:

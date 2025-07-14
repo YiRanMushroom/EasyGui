@@ -143,6 +143,8 @@ namespace EasyGui {
         PickPhysicalDevice();
         CreateLogicalDevice();
 
+        CreateAllocator();
+
         CreateSwapChain();
         CreateImageViews();
 
@@ -223,7 +225,7 @@ namespace EasyGui {
     std::vector<const char *> Window::GetRequiredExtensions() {
         std::vector<const char *> extensions;
         uint32_t sdl_extensions_count = 0;
-        const char *const*sdl_extensions = SDL_Vulkan_GetInstanceExtensions(&sdl_extensions_count);
+        const char *const *sdl_extensions = SDL_Vulkan_GetInstanceExtensions(&sdl_extensions_count);
         for (uint32_t n = 0; n < sdl_extensions_count; n++)
             extensions.push_back(sdl_extensions[n]);
 
@@ -321,6 +323,18 @@ namespace EasyGui {
         m_Device = m_PhysicalDevice.createDevice(deviceCreateInfo).value();
         m_GraphicsQueue = m_Device.getQueue(queueFamilies.GraphicsFamily.value(), 0).value();
         m_PresentQueue = m_Device.getQueue(queueFamilies.PresentFamily.value(), 0).value();
+    }
+
+    void Window::CreateAllocator() {
+        vma::AllocatorCreateInfo allocatorInfo{
+            .flags = vma::AllocatorCreateFlagBits::eExtMemoryBudget,
+            .physicalDevice = *m_PhysicalDevice,
+            .device = *m_Device,
+            .instance = *m_Instance,
+            .vulkanApiVersion = vk::ApiVersion13
+        };
+
+        m_Allocator = vma::createAllocatorUnique(allocatorInfo).value;
     }
 
     void Window::CreateSurface() {
@@ -1110,6 +1124,7 @@ namespace EasyGui {
         }
 
         m_Device.waitIdle();
+        m_Layers.clear();
     }
 
 

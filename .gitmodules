@@ -6,3 +6,7 @@
 	path = vendor/imgui
 	url = https://github.com/YiRanMushroom/imgui
 	branch = docking
+[submodule "vendor/VulkanMemoryAllocator"]
+	path = vendor/VulkanMemoryAllocator
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp
+	branch = master
