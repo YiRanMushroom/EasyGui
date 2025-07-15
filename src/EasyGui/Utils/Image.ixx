@@ -1,6 +1,6 @@
 module;
 
-export module EasyGui.Vulkan.Image;
+export module EasyGui.Utils.Image;
 
 import EasyGui.Lib;
 import EasyGui;
@@ -30,6 +30,10 @@ namespace EasyGui::Vulkan {
                 std::swap(m_Height, other.m_Height);
             }
             return *this;
+        }
+
+        explicit operator bool() const {
+            return m_TextureId != 0;
         }
 
         ~ImGuiImage() {
@@ -76,6 +80,8 @@ namespace EasyGui::Vulkan {
                    size_t width, size_t height)
             : m_Image(std::move(image)), m_Memory(std::move(memory)), m_ImageView(std::move(imageView)),
               m_Width(width), m_Height(height) {}
+
+        PixelImage() = default;
 
         PixelImage(const PixelImage &) = delete;
 
@@ -133,6 +139,10 @@ namespace EasyGui::Vulkan {
 
         std::pair<size_t, size_t> GetSize() const {
             return {m_Width, m_Height};
+        }
+
+        explicit operator bool() const {
+            return m_Image && m_Memory && m_ImageView;
         }
 
     private:
@@ -406,4 +416,60 @@ namespace EasyGui::Vulkan {
 
         return logicalDevice.createSamplerUnique(samplerInfo).value;
     }
+}
+
+namespace EasyGui {
+    export class CPUImageData {
+    public:
+        static std::optional<CPUImageData> LoadFromFile(const std::filesystem::path& path) {
+            if (!std::filesystem::exists(path)) {
+                return std::nullopt;
+            }
+
+            CPUImageData imageData(path);
+            if (imageData.m_Width <= 0 || imageData.m_Height <= 0 || imageData.m_Channels <= 0 || !imageData.m_Data) {
+                return std::nullopt;
+            }
+
+            return imageData;
+        }
+
+        int GetWidth() const {
+            return m_Width;
+        }
+
+        int GetHeight() const {
+            return m_Height;
+        }
+
+        int GetChannels() const {
+            return m_Channels;
+        }
+
+        const unsigned char* GetData() const {
+            return m_Data.get();
+        }
+
+        CPUImageData() = default;
+
+    private:
+        CPUImageData(const std::filesystem::path& path) {
+            m_Data.reset(stbi_load(
+                path.string().c_str(),
+                &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha
+            ));
+        }
+
+        struct STBDeleteType {
+            void operator()(unsigned char* data) const {
+                stbi_image_free(data);
+            }
+        };
+
+        std::unique_ptr<unsigned char, STBDeleteType> m_Data;
+        int m_Width = 0;
+        int m_Height = 0;
+        int m_Channels = 0;
+
+    };
 }
