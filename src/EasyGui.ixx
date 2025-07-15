@@ -246,6 +246,7 @@ namespace EasyGui {
         vk::raii::Queue &GetPresentQueue() { return m_PresentQueue; }
         vk::raii::RenderPass &GetRenderPass() { return m_RenderPass; }
         vk::raii::CommandPool &GetCommandPool() { return m_CommandPool; }
+        vma::UniqueAllocator &GetAllocator() { return m_Allocator; }
         void SetClearColor(const vk::ClearColorValue &clearColor) { m_ClearColor = clearColor; }
 
         void PushLayer(std::shared_ptr<IUpdatableLayer> layer) {
