@@ -207,21 +207,6 @@ VMA_HPP_NAMESPACE {
             ) : m_allocator(allocator),
                 m_allocation (details::getResultValue(m_allocator.allocateMemory(vkMemoryRequirements, createInfo, allocationInfo))) {}
 
-            // Allocation(
-            //     VMA_HPP_NAMESPACE::Allocator allocator,
-            //     VMA_HPP_NAMESPACE::Allocation &&allocation
-            // ) : m_allocator(allocator), m_allocation(std::move(allocation)) {}
-
-            static VULKAN_HPP_NAMESPACE::ResultValueType<Allocation>::type create(
-                VMA_HPP_NAMESPACE::Allocator allocator,
-                const VULKAN_HPP_NAMESPACE::MemoryRequirements &vkMemoryRequirements,
-                const VMA_HPP_NAMESPACE::AllocationCreateInfo &createInfo,
-                VULKAN_HPP_NAMESPACE::Optional<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo = nullptr
-            ) {
-                auto res = allocator.allocateMemory(vkMemoryRequirements, createInfo, allocationInfo);
-                return details::emplaceResult<Allocation>(std::move(res), allocator);
-            }
-
             ~Allocation() {
                 if (m_allocation) {
                     m_allocator.freeMemory(m_allocation);
@@ -354,25 +339,20 @@ VMA_HPP_NAMESPACE {
                 const VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Device &device,
                 const VULKAN_HPP_NAMESPACE::BufferCreateInfo &bufferCreateInfo
             ) const {
-                // VULKAN_HPP_NAMESPACE::Buffer buff = m_allocator.createAliasingBuffer(m_allocation, bufferCreateInfo);
-                // return VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Buffer(device, buff);
                 return details::createRaiiResult<VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Buffer>(
                     device,
                     m_allocator.createAliasingBuffer(m_allocation, bufferCreateInfo)
                 );
             }
 
-            VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<
-                VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Buffer>::type createAliasingBuffer2(
+            auto createAliasingBuffer2(
                 const VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Device &device,
                 VULKAN_HPP_NAMESPACE::DeviceSize allocationLocalOffset,
                 const VULKAN_HPP_NAMESPACE::BufferCreateInfo &bufferCreateInfo
             ) const {
-                // VULKAN_HPP_NAMESPACE::Buffer buff = m_allocator.createAliasingBuffer2(m_allocation, allocationLocalOffset, bufferCreateInfo);
-                // return VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Buffer(device, buff);
-                return details::createRaiiResult<VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Buffer>(
+                return VULKAN_HPP_NAMESPACE::VULKAN_HPP_RAII_NAMESPACE::Buffer(
                     device,
-                    m_allocator.createAliasingBuffer2(m_allocation, allocationLocalOffset, bufferCreateInfo)
+                    m_allocator.createAliasingBuffer2(m_allocation, allocationLocalOffset, bufferCreateInfo).value
                 );
             }
 #pragma endregion
@@ -1087,55 +1067,49 @@ VMA_HPP_NAMESPACE {
                 );
             }
 
-            VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<Allocation>::type
+            VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS auto
             allocateMemory(
                 const VULKAN_HPP_NAMESPACE::MemoryRequirements &vkMemoryRequirements,
                 const VMA_HPP_NAMESPACE::AllocationCreateInfo &createInfo,
                 VULKAN_HPP_NAMESPACE::Optional<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo = nullptr
             ) const {
-                // return Allocation(this->operator VmaAllocator(), vkMemoryRequirements, createInfo, allocationInfo);
-                return Allocation::create(
-                    this->operator VmaAllocator(),
-                    vkMemoryRequirements,
-                    createInfo,
-                    allocationInfo
-                );
+                return Allocation(this->operator VmaAllocator(), vkMemoryRequirements, createInfo, allocationInfo);
             }
 
 #pragma region Allocations
-            template<typename VectorAllocator = std::allocator<Allocation>,
-                typename B = VectorAllocator,
-                typename std::enable_if<std::is_same<typename B::value_type, Allocation>::value, int>::type = 0>
-            VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<std::vector<
-                Allocation, VectorAllocator>>::type allocateMemoryPages(
-                VULKAN_HPP_NAMESPACE::ArrayProxy<const VULKAN_HPP_NAMESPACE::MemoryRequirements> vkMemoryRequirements,
-                VULKAN_HPP_NAMESPACE::ArrayProxy<const VMA_HPP_NAMESPACE::AllocationCreateInfo> createInfo,
-                VULKAN_HPP_NAMESPACE::ArrayProxyNoTemporaries<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo,
-                VectorAllocator &vectorAllocator
-            ) const; //TODO
-
-            template<typename VectorAllocator = std::allocator<Allocation>>
-            VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<std::vector<
-                Allocation, VectorAllocator>>::type allocateMemoryPages(
-                VULKAN_HPP_NAMESPACE::ArrayProxy<const VULKAN_HPP_NAMESPACE::MemoryRequirements> vkMemoryRequirements,
-                VULKAN_HPP_NAMESPACE::ArrayProxy<const VMA_HPP_NAMESPACE::AllocationCreateInfo> createInfo,
-                VULKAN_HPP_NAMESPACE::ArrayProxyNoTemporaries<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo =
-                        nullptr
-            ) const; //TODO
-
-            VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<Allocation>::type
-            allocateMemoryForBuffer(
-                VULKAN_HPP_NAMESPACE::Buffer buffer,
-                const VMA_HPP_NAMESPACE::AllocationCreateInfo &createInfo,
-                VULKAN_HPP_NAMESPACE::Optional<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo = nullptr
-            ) const; //TODO
-
-            VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<Allocation>::type
-            allocateMemoryForImage(
-                VULKAN_HPP_NAMESPACE::Image image,
-                const VMA_HPP_NAMESPACE::AllocationCreateInfo &createInfo,
-                VULKAN_HPP_NAMESPACE::Optional<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo = nullptr
-            ) const; //TODO
+            // template<typename VectorAllocator = std::allocator<Allocation>,
+            //     typename B = VectorAllocator,
+            //     typename std::enable_if<std::is_same<typename B::value_type, Allocation>::value, int>::type = 0>
+            // VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<std::vector<
+            //     Allocation, VectorAllocator>>::type allocateMemoryPages(
+            //     VULKAN_HPP_NAMESPACE::ArrayProxy<const VULKAN_HPP_NAMESPACE::MemoryRequirements> vkMemoryRequirements,
+            //     VULKAN_HPP_NAMESPACE::ArrayProxy<const VMA_HPP_NAMESPACE::AllocationCreateInfo> createInfo,
+            //     VULKAN_HPP_NAMESPACE::ArrayProxyNoTemporaries<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo,
+            //     VectorAllocator &vectorAllocator
+            // ) const; //TODO
+            //
+            // template<typename VectorAllocator = std::allocator<Allocation>>
+            // VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<std::vector<
+            //     Allocation, VectorAllocator>>::type allocateMemoryPages(
+            //     VULKAN_HPP_NAMESPACE::ArrayProxy<const VULKAN_HPP_NAMESPACE::MemoryRequirements> vkMemoryRequirements,
+            //     VULKAN_HPP_NAMESPACE::ArrayProxy<const VMA_HPP_NAMESPACE::AllocationCreateInfo> createInfo,
+            //     VULKAN_HPP_NAMESPACE::ArrayProxyNoTemporaries<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo =
+            //             nullptr
+            // ) const; //TODO
+            //
+            // VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<Allocation>::type
+            // allocateMemoryForBuffer(
+            //     VULKAN_HPP_NAMESPACE::Buffer buffer,
+            //     const VMA_HPP_NAMESPACE::AllocationCreateInfo &createInfo,
+            //     VULKAN_HPP_NAMESPACE::Optional<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo = nullptr
+            // ) const; //TODO
+            //
+            // VULKAN_HPP_NODISCARD_WHEN_NO_EXCEPTIONS typename VULKAN_HPP_NAMESPACE::ResultValueType<Allocation>::type
+            // allocateMemoryForImage(
+            //     VULKAN_HPP_NAMESPACE::Image image,
+            //     const VMA_HPP_NAMESPACE::AllocationCreateInfo &createInfo,
+            //     VULKAN_HPP_NAMESPACE::Optional<VMA_HPP_NAMESPACE::AllocationInfo> allocationInfo = nullptr
+            // ) const; //TODO
 
             typename VULKAN_HPP_NAMESPACE::ResultValueType<void>::type flushAllocations(
                 VULKAN_HPP_NAMESPACE::ArrayProxy<const Allocation> allocations,

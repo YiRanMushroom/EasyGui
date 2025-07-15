@@ -15,7 +15,5 @@ namespace VULKAN_HPP_NAMESPACE {
     template class UniqueHandle<VMA_HPP_NAMESPACE::VirtualBlock, VMA_HPP_NAMESPACE::Dispatcher>;
 }
 
-#include "Vulkan/vk_mem_alloc_raii.hpp"
-
 #undef max
 #undef min

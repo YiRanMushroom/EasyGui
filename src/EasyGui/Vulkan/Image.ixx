@@ -147,14 +147,14 @@ namespace EasyGui::Vulkan {
 
     export class ImageHelper {
     public:
-        ImageHelper(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice,
-                    vk::CommandPool commandPool,
-                    vk::Queue graphicsQueue,
+        ImageHelper(vk::raii::PhysicalDevice* physicalDevice, vk::raii::Device* logicalDevice,
+                    vk::raii::CommandPool* commandPool,
+                    vk::raii::Queue* graphicsQueue,
                     vk::Instance instance,
-                    vma::Allocator allocator)
+                    vma::UniqueAllocator* allocator)
             : m_PhysicalDevice(physicalDevice), m_LogicalDevice(logicalDevice),
               m_CommandPool(commandPool), m_GraphicsQueue(graphicsQueue),
-              m_Instance(instance), m_Allocator(allocator) {}
+              m_Instance(instance), m_Allocator(**allocator) {}
 
         std::pair<vma::UniqueImage, vma::UniqueAllocation>
         CreateImage(
@@ -220,13 +220,13 @@ namespace EasyGui::Vulkan {
             uint32_t width,
             uint32_t height) {
             vk::CommandBufferAllocateInfo allocInfo{
-                .commandPool = m_CommandPool,
+                .commandPool = *m_CommandPool,
                 .level = vk::CommandBufferLevel::ePrimary,
                 .commandBufferCount = 1
             };
 
-            vk::UniqueCommandBuffer commandBuffer = std::move(
-                m_LogicalDevice.allocateCommandBuffersUnique(allocInfo).value.front());
+            vk::raii::CommandBuffer commandBuffer = std::move(
+                m_LogicalDevice->allocateCommandBuffers(allocInfo).value().front());
 
             vk::CommandBufferBeginInfo beginInfo{
                 .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
@@ -280,9 +280,9 @@ namespace EasyGui::Vulkan {
                 }
             };
 
-            commandBuffer->begin(beginInfo);
+            commandBuffer.begin(beginInfo);
 
-            commandBuffer->pipelineBarrier(
+            commandBuffer.pipelineBarrier(
                 vk::PipelineStageFlagBits::eTopOfPipe,
                 vk::PipelineStageFlagBits::eTransfer,
                 {},
@@ -291,14 +291,14 @@ namespace EasyGui::Vulkan {
                 toTransferBarrier
             );
 
-            commandBuffer->copyBufferToImage(
+            commandBuffer.copyBufferToImage(
                 buffer,
                 image,
                 vk::ImageLayout::eTransferDstOptimal,
                 region
             );
 
-            commandBuffer->pipelineBarrier(
+            commandBuffer.pipelineBarrier(
                 vk::PipelineStageFlagBits::eTransfer,
                 vk::PipelineStageFlagBits::eFragmentShader,
                 {},
@@ -307,15 +307,15 @@ namespace EasyGui::Vulkan {
                 toShaderBarrier
             );
 
-            commandBuffer->end();
+            commandBuffer.end();
 
             vk::SubmitInfo submitInfo{
                 .commandBufferCount = 1,
                 .pCommandBuffers = &*commandBuffer
             };
 
-            m_GraphicsQueue.submit(submitInfo);
-            m_GraphicsQueue.waitIdle();
+            m_GraphicsQueue->submit(submitInfo);
+            m_GraphicsQueue->waitIdle();
         }
 
         vk::UniqueImageView CreateImageView(
@@ -334,7 +334,7 @@ namespace EasyGui::Vulkan {
                 }
             };
 
-            return m_LogicalDevice.createImageViewUnique(
+            return (**m_LogicalDevice).createImageViewUnique(
                 viewInfo
             ).value;
         }
@@ -370,15 +370,15 @@ namespace EasyGui::Vulkan {
         }
 
     private:
-        vk::PhysicalDevice m_PhysicalDevice;
-        vk::Device m_LogicalDevice;
-        vk::CommandPool m_CommandPool;
-        vk::Queue m_GraphicsQueue;
+        vk::raii::PhysicalDevice* m_PhysicalDevice;
+        vk::raii::Device* m_LogicalDevice;
+        vk::raii::CommandPool* m_CommandPool;
+        vk::raii::Queue* m_GraphicsQueue;
         vk::Instance m_Instance;
         vma::Allocator m_Allocator;
 
         uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-            vk::PhysicalDeviceMemoryProperties memProperties = m_PhysicalDevice.getMemoryProperties();
+            vk::PhysicalDeviceMemoryProperties memProperties = m_PhysicalDevice->getMemoryProperties();
 
             for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
                 if ((typeFilter & (1 << i)) &&
