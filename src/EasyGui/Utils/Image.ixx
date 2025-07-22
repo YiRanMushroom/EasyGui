@@ -124,7 +124,7 @@ namespace EasyGui::Vulkan {
             );
 
             return {
-                reinterpret_cast<ImTextureID>(descriptorSet),
+                std::bit_cast<ImTextureID>(descriptorSet),
                 m_Width, m_Height
             };
         }
@@ -153,7 +153,6 @@ namespace EasyGui::Vulkan {
         size_t m_Width = 0;
         size_t m_Height = 0;
     };
-
 
     export class ImageHelper {
     public:

@@ -1,3 +1,3 @@
 export module EasyGui.Lib;
 
-export import "Lib.hpp";
+#include "Lib.hpp"

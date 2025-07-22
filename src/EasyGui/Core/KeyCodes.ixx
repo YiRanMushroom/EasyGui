@@ -2,7 +2,7 @@ export module EasyGui.Core.KeyCodes;
 
 import std.compat;
 
-import <EasyGui/Lib_SDL3.hpp>;
+import "../Lib/Lib_SDL3.hpp";
 
 namespace Key {
     export using KeyCode = uint32_t;

@@ -6,9 +6,9 @@ import EasyGui.Core.KeyCodes;
 import EasyGui.Core.MouseCodes;
 import EasyGui.Event.AllEvents;
 
-import <EasyGui/Lib_SDL3.hpp>;
-import <EasyGui/Lib_Vulkan.hpp>;
-import <EasyGui/Lib_imgui.hpp>;
+import <EasyGui/Lib/Lib_SDL3.hpp>;
+import <EasyGui/Lib/Lib_Vulkan.hpp>;
+import <EasyGui/Lib/Lib_imgui.hpp>;
 
 namespace EasyGui {
     Window::Window(const WindowSpec &windowSpec) : m_Context(vk::raii::Context{}) {
@@ -17,123 +17,12 @@ namespace EasyGui {
     }
 
     void Window::InitializeWindow(const WindowSpec &windowSpec) {
-        // glfw::WindowHints{
-        //     .resizable = true,
-        //     .clientApi = glfw::ClientApi::None,
-        // }.apply();
-
-        // m_Window = glfw::Window{windowSpec.width, windowSpec.height, windowSpec.title.c_str()};
         SDL_WindowFlags windowFlags =
                 SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
         m_Window = SDL_CreateWindow(windowSpec.title.c_str(), windowSpec.width, windowSpec.height, windowFlags);
         if (!m_Window) {
             throw std::runtime_error("Failed to create SDL window: " + std::string(SDL_GetError()));
         }
-
-        // m_Window->framebufferSizeEvent.setCallback([this](glfw::Window &window, int width, int height) {
-        //     if (width > 0 && height > 0) {
-        //         m_ShouldUpdate = true;
-        //         RecreateSwapChain();
-        //     } else {
-        //         m_ShouldUpdate = false;
-        //     }
-        //
-        //     WindowResizeEvent event{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-        //     for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //         if ((*reverseIt)->OnEvent(&event)) {
-        //             break;
-        //         }
-        //     }
-        // });
-        //
-        //
-        // m_Window->closeEvent.setCallback([this](glfw::Window &window) {
-        //     WindowCloseEvent event{};
-        //     for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //         if ((*reverseIt)->OnEvent(&event)) {
-        //             break;
-        //         }
-        //     }
-        // });
-        //
-        // m_Window->keyEvent.setCallback([this](glfw::Window &window, glfw::KeyCode key, int scanCode,
-        //                                       glfw::KeyState action, glfw::ModifierKeyBit mods) {
-        //     switch (action) {
-        //         case glfw::KeyState::Press: {
-        //             KeyPressedEvent event{Key::KeyCode(key), false};
-        //             for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //                 if ((*reverseIt)->OnEvent(&event)) {
-        //                     break;
-        //                 }
-        //             }
-        //             break;
-        //         }
-        //         case glfw::KeyState::Release: {
-        //             KeyReleasedEvent event{Key::KeyCode(key)};
-        //             for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //                 if ((*reverseIt)->OnEvent(&event)) {
-        //                     break;
-        //                 }
-        //             }
-        //             break;
-        //         }
-        //         case glfw::KeyState::Repeat: {
-        //             KeyPressedEvent event{Key::KeyCode(key), true};
-        //             for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //                 if ((*reverseIt)->OnEvent(&event)) {
-        //                     break;
-        //                 }
-        //             }
-        //             break;
-        //         }
-        //         default:
-        //             std::cerr << "Unknown key action: " << static_cast<int>(action) << std::endl;
-        //     }
-        // });
-        //
-        // m_Window->charEvent.setCallback([this](glfw::Window &window, unsigned int keyCode) {
-        //     KeyTypedEvent event{keyCode};
-        //     for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //         if ((*reverseIt)->OnEvent(&event)) {
-        //             break;
-        //         }
-        //     }
-        // });
-        //
-        // m_Window->mouseButtonEvent.setCallback([this](glfw::Window &window, glfw::MouseButton button,
-        //                                               glfw::MouseButtonState action, glfw::ModifierKeyBit mods) {
-        //     switch (action) {
-        //         case glfw::MouseButtonState::Press: {
-        //             MouseButtonPressedEvent event{static_cast<uint16_t>(button)};
-        //             for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //                 if ((*reverseIt)->OnEvent(&event)) {
-        //                     break;
-        //                 }
-        //             }
-        //             break;
-        //         }
-        //         case glfw::MouseButtonState::Release: {
-        //             MouseButtonReleasedEvent event{static_cast<uint16_t>(button)};
-        //             for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //                 if ((*reverseIt)->OnEvent(&event)) {
-        //                     break;
-        //                 }
-        //             }
-        //             break;
-        //         }
-        //         default:
-        //             std::cerr << "Unknown mouse button action: " << static_cast<int>(action) << std::endl;
-        //     }
-        // });
-        //
-        // m_Window->cursorPosEvent.setCallback([this](glfw::Window &window, double xPos, double yPos) {
-        //     MouseMovedEvent event{static_cast<float>(xPos), static_cast<float>(yPos)};
-        //     for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-        //         if ((*reverseIt)->OnEvent(&event)) {
-        //             break;
-        //         }
-        //     }
-        // });
     }
 
     void Window::InitVulkan() {
@@ -148,7 +37,9 @@ namespace EasyGui {
         CreateSwapChain();
         CreateImageViews();
 
-        // CreateSampler();
+        CreateDescriptorPool();
+
+        CreateSampler();
 
         CreateRenderPass();
         CreateFramebuffers();
@@ -552,28 +443,37 @@ namespace EasyGui {
         }
     }
 
-    // void Window::CreateSampler() {
-    //     vk::SamplerCreateInfo samplerInfo{
-    //         .sType = vk::StructureType::eSamplerCreateInfo,
-    //         .pNext = nullptr,
-    //         .magFilter = vk::Filter::eLinear,
-    //         .minFilter = vk::Filter::eLinear,
-    //         .mipmapMode = vk::SamplerMipmapMode::eLinear,
-    //         .addressModeU = vk::SamplerAddressMode::eRepeat,
-    //         .addressModeV = vk::SamplerAddressMode::eRepeat,
-    //         .addressModeW = vk::SamplerAddressMode::eRepeat,
-    //         .mipLodBias = 0.0f,
-    //         .anisotropyEnable = VK_FALSE,
-    //         .maxAnisotropy = 1.0f,
-    //         .compareEnable = VK_FALSE,
-    //         .compareOp = vk::CompareOp::eAlways,
-    //         .minLod = 0.0f,
-    //         .maxLod = 0.0f,
-    //         .borderColor = vk::BorderColor::eIntOpaqueBlack,
-    //     };
-    //
-    //     m_Sampler = m_Device.createSampler(samplerInfo).value();
-    // }
+    void Window::CreateDescriptorPool() {
+        vk::DescriptorPoolSize poolSize{
+            .type = vk::DescriptorType::eCombinedImageSampler,
+            .descriptorCount = 10
+        };
+
+        vk::DescriptorPoolCreateInfo poolInfo{
+            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+            .maxSets = 10,
+            .poolSizeCount = 1,
+            .pPoolSizes = &poolSize
+        };
+
+        m_DescriptorPool = m_Device.createDescriptorPool(poolInfo).value();
+    }
+
+    void Window::CreateSampler() {
+        vk::SamplerCreateInfo samplerInfo{
+            .magFilter = vk::Filter::eLinear,
+            .minFilter = vk::Filter::eLinear,
+            .mipmapMode = vk::SamplerMipmapMode::eLinear,
+            .addressModeU = vk::SamplerAddressMode::eRepeat,
+            .addressModeV = vk::SamplerAddressMode::eRepeat,
+            .addressModeW = vk::SamplerAddressMode::eRepeat,
+            .anisotropyEnable = vk::False,
+            .borderColor = vk::BorderColor::eIntOpaqueBlack,
+            .unnormalizedCoordinates = vk::False,
+        };
+
+        m_Sampler = m_Device.createSampler(samplerInfo).value();
+    }
 
     inline void ImGuiUseStyleColorHazel() {
         auto &colors = ImGui::GetStyle().Colors;
@@ -633,38 +533,10 @@ namespace EasyGui {
         // colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.02f, 0.02f, 0.02f, 1.0f);
     }
 
-    vk::DescriptorPool g_ImDescriptorPool{nullptr};
-    vk::Device g_ImguiLogicalDevice{nullptr};
-
-    void InitImGuiDescriptorPool(vk::Device device) {
-        vk::DescriptorPoolSize poolSize{
-            .type = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 10
-        };
-
-        vk::DescriptorPoolCreateInfo poolInfo{
-            .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-            .maxSets = 10,
-            .poolSizeCount = 1,
-            .pPoolSizes = &poolSize
-        };
-
-        g_ImDescriptorPool = device.createDescriptorPool(poolInfo).value;
-    }
-
-    void DestroyImGuiDescriptorPool(vk::Device device) {
-        if (g_ImDescriptorPool) {
-            device.destroyDescriptorPool(g_ImDescriptorPool);
-            g_ImDescriptorPool = nullptr;
-        }
-    }
-
     void InitImGuiForMyProgram(uint32_t apiVersion,
                                vk::Instance instance, vk::PhysicalDevice physicalDevice,
-                               vk::Device device, uint32_t queueFamily, vk::Queue queue,
+                               vk::Device device, uint32_t queueFamily, vk::Queue queue, vk::DescriptorPool descriptorPool,
                                vk::RenderPass renderPass, uint32_t minImageCount, uint32_t imageCount) {
-        InitImGuiDescriptorPool(device);
-        g_ImguiLogicalDevice = device;
 
         ImGui_ImplVulkan_InitInfo info{};
         info.ApiVersion = apiVersion;
@@ -673,7 +545,7 @@ namespace EasyGui {
         info.Device = device;
         info.QueueFamily = queueFamily;
         info.Queue = queue;
-        info.DescriptorPool = g_ImDescriptorPool;
+        info.DescriptorPool = descriptorPool;
         info.RenderPass = renderPass;
         info.MinImageCount = minImageCount;
         info.ImageCount = imageCount;
@@ -683,8 +555,6 @@ namespace EasyGui {
 
     void ShutdownImGuiForMyProgram() {
         ImGui_ImplVulkan_Shutdown();
-        DestroyImGuiDescriptorPool(g_ImguiLogicalDevice);
-        g_ImguiLogicalDevice = nullptr;
     }
 
     void Window::InitImGui() {
@@ -710,7 +580,6 @@ namespace EasyGui {
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
         }
 
-        // ImGui_ImplGlfw_InitForVulkan(m_Window.value(), true);
         ImGui_ImplSDL3_InitForVulkan(m_Window);
 
         InitImGuiForMyProgram(
@@ -720,6 +589,7 @@ namespace EasyGui {
             *m_Device,
             FindQueueFamilies(*m_PhysicalDevice).GraphicsFamily.value(),
             *m_GraphicsQueue,
+            *m_DescriptorPool,
             *m_RenderPass,
             m_MinImageCount, m_ImageCount
         );
@@ -826,155 +696,43 @@ namespace EasyGui {
         m_CommandPool = m_Device.createCommandPool(poolInfo).value();
     }
 
-    void Window::CreateCommandBuffer() {
-        vk::CommandBufferAllocateInfo allocInfo{
-            .pNext = nullptr,
-            .commandPool = *m_CommandPool,
-            .level = vk::CommandBufferLevel::ePrimary,
-            .commandBufferCount = 1
-        };
+    // void Window::CreateCommandBuffer() {
+    //     vk::CommandBufferAllocateInfo allocInfo{
+    //         .pNext = nullptr,
+    //         .commandPool = *m_CommandPool,
+    //         .level = vk::CommandBufferLevel::ePrimary,
+    //         .commandBufferCount = 1
+    //     };
+    //
+    //     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    //         m_CommandBuffers.push_back(std::move(m_Device.allocateCommandBuffers(allocInfo).value().front()));
+    //     }
+    //
+    //     // m_CommandBufferDependentContexts.resize(MAX_FRAMES_IN_FLIGHT);
+    // }
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            m_CommandBuffers.push_back(std::move(m_Device.allocateCommandBuffers(allocInfo).value().front()));
-        }
+    // void Window::CreateSyncObjects() {
+    //     vk::SemaphoreCreateInfo semaphoreInfo{
+    //         .pNext = nullptr,
+    //         .flags = {}
+    //     };
+    //     vk::FenceCreateInfo fenceInfo{
+    //         .pNext = nullptr,
+    //         .flags = vk::FenceCreateFlagBits::eSignaled // Start with the fence signaled
+    //     };
+    //
+    //     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    //         m_ImageAvailableSemaphores.push_back(m_Device.createSemaphore(semaphoreInfo).value());
+    //         m_InFlightFences.push_back(m_Device.createFence(fenceInfo).value());
+    //     }
+    //
+    //     // m_InFlightFence = m_Device.createFence(fenceInfo).value();
+    //     for (size_t i = 0; i < m_SwapChainImages.size(); i++) {
+    //         m_RenderFinishedSemaphores.push_back(m_Device.createSemaphore(semaphoreInfo).value());
+    //     }
+    // }
 
-        m_CommandBufferDependentContexts.resize(MAX_FRAMES_IN_FLIGHT);
-    }
 
-    void Window::CreateSyncObjects() {
-        vk::SemaphoreCreateInfo semaphoreInfo{
-            .pNext = nullptr,
-            .flags = {}
-        };
-        vk::FenceCreateInfo fenceInfo{
-            .pNext = nullptr,
-            .flags = vk::FenceCreateFlagBits::eSignaled // Start with the fence signaled
-        };
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            m_ImageAvailableSemaphores.push_back(m_Device.createSemaphore(semaphoreInfo).value());
-            m_InFlightFences.push_back(m_Device.createFence(fenceInfo).value());
-        }
-
-        // m_InFlightFence = m_Device.createFence(fenceInfo).value();
-        for (size_t i = 0; i < m_SwapChainImages.size(); i++) {
-            m_RenderFinishedSemaphores.push_back(m_Device.createSemaphore(semaphoreInfo).value());
-        }
-    }
-
-    void Window::DrawFrame() {
-        BeginImGuiFrame();
-        OnUpdate();
-        ImGui::Render();
-
-        auto waitForFenceResult = m_Device.waitForFences(*m_InFlightFences[m_CurrentFrame], vk::True,
-                                                         std::numeric_limits<uint64_t>::max()
-        );
-
-        if (waitForFenceResult != vk::Result::eSuccess) {
-            std::cerr << "Failed to wait for fence: " << vk::to_string(waitForFenceResult) << std::endl;
-            return;
-        }
-
-        auto [resultAcquireImage, imageIndex] = m_SwapChain.acquireNextImage(
-            std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame],
-
-            nullptr
-        );
-
-        if (resultAcquireImage != vk::Result::eSuccess &&
-            resultAcquireImage != vk::Result::eSuboptimalKHR) {
-            if (resultAcquireImage == vk::Result::eErrorOutOfDateKHR) {
-                RecreateSwapChain();
-                return;
-            } else {
-                std::cerr << "Failed to acquire swap chain image: " << vk::to_string(resultAcquireImage) << std::endl;
-                return;
-            }
-        }
-
-        m_Device.resetFences(*m_InFlightFences[m_CurrentFrame]);
-
-        // m_ImageViewDependentRenderTargetsPerFrameBuffer[imageIndex] = std::move(m_DependentRenderTargets);
-
-        m_CommandBufferDependentContexts[m_CurrentFrame].clear();
-        m_CommandBuffers[m_CurrentFrame].reset();
-
-        vk::CommandBufferBeginInfo beginInfo{
-            .pNext = nullptr,
-            .flags = {},
-            .pInheritanceInfo = nullptr // No inheritance for primary command buffers
-        };
-
-        m_CommandBuffers[m_CurrentFrame].begin(beginInfo);
-
-        vk::ClearValue clearColor{
-            m_ClearColor
-        };
-
-        vk::RenderPassBeginInfo renderPassInfo{
-            .pNext = nullptr,
-            .renderPass = m_RenderPass,
-            .framebuffer = m_SwapChainFramebuffers[imageIndex],
-            .renderArea = vk::Rect2D{
-                .offset = {0, 0},
-                .extent = m_SwapChainExtent
-            },
-            .clearValueCount = 1,
-            .pClearValues = &clearColor
-        };
-
-        m_CommandBuffers[m_CurrentFrame].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-
-        for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-            auto &layer = *reverseIt;
-            layer->OnSubmitCommandBuffer(m_CommandBuffers[m_CurrentFrame],
-                                         m_CommandBufferDependentContexts[m_CurrentFrame]);
-        }
-
-        ImDrawData *draw_data = ImGui::GetDrawData();
-        ImGui_ImplVulkan_RenderDrawData(draw_data, *m_CommandBuffers[m_CurrentFrame]);
-
-        m_CommandBuffers[m_CurrentFrame].endRenderPass();
-
-        m_CommandBuffers[m_CurrentFrame].end();
-
-        vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-        vk::Semaphore waitSemaphores[] = {*m_ImageAvailableSemaphores[m_CurrentFrame]};
-        vk::Semaphore signalSemaphores[] = {*m_RenderFinishedSemaphores[imageIndex]};
-        vk::CommandBuffer commandBuffers[] = {*m_CommandBuffers[m_CurrentFrame]};
-
-        vk::SubmitInfo submitInfo{
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = waitSemaphores,
-            .pWaitDstStageMask = waitStages,
-            .commandBufferCount = 1,
-            .pCommandBuffers = commandBuffers,
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = signalSemaphores
-        };
-
-        m_GraphicsQueue.submit(submitInfo, m_InFlightFences[m_CurrentFrame]);
-
-        vk::SwapchainKHR swapChains[] = {*m_SwapChain};
-        vk::PresentInfoKHR presentInfo{
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = signalSemaphores,
-            .swapchainCount = 1,
-            .pSwapchains = swapChains,
-            .pImageIndices = &imageIndex
-        };
-
-        vk::Result presentResult = m_PresentQueue.presentKHR(presentInfo);
-
-        m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-        auto &io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-        }
-    }
 
     void Window::RecreateSwapChain() {
         m_Device.waitIdle();
@@ -1129,7 +887,6 @@ namespace EasyGui {
 
 
     void Window::Cleanup() {
-        m_CommandBufferDependentContexts.clear();
         CleanupSwapChain();
 
         ShutdownImGuiForMyProgram();

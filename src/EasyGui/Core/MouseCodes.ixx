@@ -2,7 +2,7 @@ export module EasyGui.Core.MouseCodes;
 
 import std.compat;
 
-import <EasyGui/Lib_SDL3.hpp>;
+import "../Lib/Lib_SDL3.hpp";
 
 namespace Mouse {
     export using MouseCode = uint16_t;
