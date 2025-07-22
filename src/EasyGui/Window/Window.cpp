@@ -251,48 +251,62 @@ namespace EasyGui {
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
                 ImGui_ImplSDL3_ProcessEvent(&event);
-                if (event.type == SDL_EVENT_QUIT) {
-                    done = true;
-                    WindowCloseEvent event{};
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
+                // rewrite this using switch case
+                switch (event.type) {
+                    case SDL_EVENT_QUIT: {
+                        done = true;
+                        WindowCloseEvent event{};
+                        for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                            if ((*reverseIt)->OnEvent(event)) {
+                                break;
+                            }
                         }
+                        break;
                     }
-                } else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID ==
-                           SDL_GetWindowID(m_Window)) {
-                    done = true;
-                    WindowCloseEvent event{};
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
+                    case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
+                        if (event.window.windowID == SDL_GetWindowID(m_Window)) {
+                            done = true;
+                            WindowCloseEvent event{};
+                            for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                                if ((*reverseIt)->OnEvent(event)) {
+                                    break;
+                                }
+                            }
                         }
+                        break;
                     }
-                } else if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_MINIMIZED ||
-                           event.type == SDL_EVENT_WINDOW_MAXIMIZED) {
-                    int width, height;
-                    width = event.window.data1;
-                    height = event.window.data2;
+                    case SDL_EVENT_WINDOW_RESIZED:
+                    case SDL_EVENT_WINDOW_MINIMIZED:
+                    case SDL_EVENT_WINDOW_MAXIMIZED: {
+                        int width, height;
+                        width = event.window.data1;
+                        height = event.window.data2;
 
-                    if (width > 0 && height > 0) {
+                        if (width > 0 && height > 0) {
+                            m_ShouldUpdate = true;
+                            auto [swapChainWidth, swapChainHeight] = m_GraphicsContext->GetSwapChainExtent();
+                            if (width != swapChainWidth || height != swapChainHeight) {
+                                m_GraphicsContext->RecreateSwapChain(m_Window);
+                            }
+                        } else {
+                            m_ShouldUpdate = false;
+                        }
+
+                        WindowResizeEvent resizeEvent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+                        for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                            if ((*reverseIt)->OnEvent(resizeEvent)) {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case SDL_EVENT_WINDOW_RESTORED: {
                         m_ShouldUpdate = true;
-                        auto [swapChainWidth, swapChainHeight] = m_GraphicsContext->GetSwapChainExtent();
-                        if (width !=  swapChainWidth || height != swapChainHeight) {
-                        m_GraphicsContext->RecreateSwapChain(m_Window);
-                        }
-                    } else {
-                        m_ShouldUpdate = false;
+                        break;
                     }
-
-                    WindowResizeEvent event{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
-                        }
-                    }
-                } else if (event.type == SDL_EVENT_WINDOW_RESTORED) {
-                    m_ShouldUpdate = true;
-                } else DispatchNormalEvent(event);
+                    default:
+                        DispatchNormalEvent(event);
+                }
             }
 
             if (!m_ShouldUpdate) {
