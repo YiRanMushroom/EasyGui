@@ -1,4 +1,4 @@
-export module GraphicsContext;
+export module EasyGui.Graphics.GraphicsContext;
 
 import std;
 export import EasyGui.Lib;

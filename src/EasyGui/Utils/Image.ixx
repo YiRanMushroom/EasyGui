@@ -1,9 +1,7 @@
-module;
-
 export module EasyGui.Utils.Image;
 
 import EasyGui.Lib;
-import EasyGui;
+import std;
 
 namespace EasyGui::Vulkan {
     export class ImGuiImage {

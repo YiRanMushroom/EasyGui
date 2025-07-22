@@ -1,4 +1,4 @@
-module GraphicsContext;
+module EasyGui.Graphics.GraphicsContext;
 
 import std;
 

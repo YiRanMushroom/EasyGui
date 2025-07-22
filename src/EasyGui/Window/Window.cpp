@@ -1,81 +1,9 @@
-export module EasyGui;
+module EasyGui.Window;
 
-import std;
-export import EasyGui.Lib;
-export import EasyGui.Core.KeyCodes;
-export import EasyGui.Core.MouseCodes;
-export import EasyGui.Event.AllEvents;
-import GraphicsContext;
-
-import "EasyGui/Lib/Lib_SDL3.hpp";
-import "EasyGui/Lib/Lib_Vulkan.hpp";
+import "EasyGui/Lib/Lib.hpp";
 
 namespace EasyGui {
-    export class IUpdatableLayer {
-    public:
-        virtual ~IUpdatableLayer() = default;
-
-        virtual void OnUpdate() {}
-
-        virtual void OnSubmitCommandBuffer(vk::CommandBuffer commandBuffer) {}
-
-        virtual bool OnEvent(const Event &event) {
-            return false;
-        }
-    };
-
-    export class GlobalContext {
-    public:
-        static void Init() {
-            if (!s_Instance) {
-                s_Instance = new GlobalContext();
-            } else throw std::runtime_error("GlobalContext is already initialized.");
-        }
-
-        static void Shutdown() {
-            delete s_Instance;
-            s_Instance = nullptr;
-        }
-
-        GlobalContext(const GlobalContext &) = delete;
-
-        GlobalContext &operator=(const GlobalContext &) = delete;
-
-        GlobalContext(GlobalContext &&) = delete;
-
-        GlobalContext &operator=(GlobalContext &&) = delete;
-
-    private:
-        GlobalContext() {
-            if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
-                std::println("SDL initialized successfully.");
-            } else {
-                throw std::runtime_error("Failed to initialize SDL: " + std::string(SDL_GetError()));
-            }
-        }
-
-        ~GlobalContext() {
-            SDL_Quit();
-        }
-
-        static GlobalContext &GetInstance() {
-            if (!s_Instance) {
-                throw std::runtime_error("GlobalContext is not initialized. Call Init() first.");
-            }
-            return *s_Instance;
-        }
-
-        inline static GlobalContext *s_Instance;
-    };
-
-    export struct WindowSpec {
-        std::string title{"Default Title"};
-        int width = 1920;
-        int height = 1080;
-    };
-
-
-    inline void ImGuiUseStyleColorHazel() {
+        inline void ImGuiUseStyleColorHazel() {
         auto &colors = ImGui::GetStyle().Colors;
         colors[ImGuiCol_WindowBg] = ImVec4{0.1f, 0.105f, 0.11f, 1.0f};
 
@@ -153,200 +81,155 @@ namespace EasyGui {
         ImGui_ImplVulkan_Init(&info);
     }
 
-    export class AppGraphicsContext : public GraphicsContext {
-    public:
-        AppGraphicsContext(SDL_Window *window);
-
-        void InitImGui(SDL_Window *window) {
-            ImGui::CreateContext();
-
-            ImGuiIO &io = ImGui::GetIO();
-            (void) io;
-            io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-            io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
-            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
-            io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
-
-            ImGuiUseStyleColorHazel();
-
-            // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-            ImGuiStyle &style = ImGui::GetStyle();
-            if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-                style.WindowRounding = 0.0f;
-                style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-            }
-
-            ImGui_ImplSDL3_InitForVulkan(window);
-
-            InitImGuiForMyProgram(
-                vk::ApiVersion13,
-                *m_Instance,
-                *m_PhysicalDevice,
-                *m_Device,
-                FindQueueFamilies(*m_PhysicalDevice).GraphicsFamily.value(),
-                *m_GraphicsQueue,
-                *m_DescriptorPool,
-                *m_RenderPass,
-                m_MinImageCount, m_ImageCount
-            );
-        }
-
-        virtual ~AppGraphicsContext() override {
-            ImGui_ImplVulkan_Shutdown();
-            ImGui_ImplSDL3_Shutdown();
-            ImGui::DestroyContext();
-        }
-
-
-    };
-
     AppGraphicsContext::AppGraphicsContext(SDL_Window *window) : GraphicsContext(window) {
         InitImGui(window);
     }
 
-    export class Window {
-    public:
-        explicit Window(const WindowSpec &windowSpec);
+    void AppGraphicsContext::InitImGui(SDL_Window *window) {
+        ImGui::CreateContext();
 
-    private:
-        void DispatchNormalEvent(SDL_Event sdlEvent) {
-            switch (sdlEvent.type) {
-                case SDL_EVENT_KEY_DOWN: {
-                    KeyPressedEvent event{
-                        Key::KeyCode(sdlEvent.key.key),
-                        sdlEvent.key.repeat
-                    };
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
-                        }
+        ImGuiIO &io = ImGui::GetIO();
+        (void) io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+
+        ImGuiUseStyleColorHazel();
+
+        // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+        ImGuiStyle &style = ImGui::GetStyle();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            style.WindowRounding = 0.0f;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+        }
+
+        ImGui_ImplSDL3_InitForVulkan(window);
+
+        InitImGuiForMyProgram(
+            vk::ApiVersion13,
+            *m_Instance,
+            *m_PhysicalDevice,
+            *m_Device,
+            FindQueueFamilies(*m_PhysicalDevice).GraphicsFamily.value(),
+            *m_GraphicsQueue,
+            *m_DescriptorPool,
+            *m_RenderPass,
+            m_MinImageCount, m_ImageCount
+        );
+    }
+
+    AppGraphicsContext::~AppGraphicsContext() {
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
+        ImGui::DestroyContext();
+    }
+
+    void Window::DispatchNormalEvent(SDL_Event sdlEvent) {
+        switch (sdlEvent.type) {
+            case SDL_EVENT_KEY_DOWN: {
+                KeyPressedEvent event{
+                    Key::KeyCode(sdlEvent.key.key),
+                    sdlEvent.key.repeat
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
                     }
-                    break;
                 }
-                case SDL_EVENT_KEY_UP: {
-                    KeyReleasedEvent event{
-                        Key::KeyCode(sdlEvent.key.key)
-                    };
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
-                        }
+                break;
+            }
+            case SDL_EVENT_KEY_UP: {
+                KeyReleasedEvent event{
+                    Key::KeyCode(sdlEvent.key.key)
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
                     }
-                    break;
                 }
-                case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-                    MouseButtonPressedEvent event{
-                        Mouse::MouseCode(sdlEvent.button.button)
-                    };
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
-                        }
+                break;
+            }
+            case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+                MouseButtonPressedEvent event{
+                    Mouse::MouseCode(sdlEvent.button.button)
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
                     }
-                    break;
                 }
-                case SDL_EVENT_MOUSE_BUTTON_UP: {
-                    MouseButtonReleasedEvent event{
-                        Mouse::MouseCode(sdlEvent.button.button)
-                    };
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
-                        }
+                break;
+            }
+            case SDL_EVENT_MOUSE_BUTTON_UP: {
+                MouseButtonReleasedEvent event{
+                    Mouse::MouseCode(sdlEvent.button.button)
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
                     }
-                    break;
                 }
-                case SDL_EVENT_MOUSE_MOTION: {
-                    MouseMovedEvent event{
-                        sdlEvent.motion.x,
-                        sdlEvent.motion.y
-                    };
-                    for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
-                        if ((*reverseIt)->OnEvent(event)) {
-                            break;
-                        }
+                break;
+            }
+            case SDL_EVENT_MOUSE_MOTION: {
+                MouseMovedEvent event{
+                    sdlEvent.motion.x,
+                    sdlEvent.motion.y
+                };
+                for (auto reverseIt = m_Layers.rbegin(); reverseIt != m_Layers.rend(); ++reverseIt) {
+                    if ((*reverseIt)->OnEvent(event)) {
+                        break;
                     }
-                    break;
                 }
+                break;
             }
         }
+    }
 
-    public:
-        void MainLoop();
-
-        void OnUpdate();
-
-        void DrawFrame();
-
-    private:
-        void InitializeWindow(const WindowSpec &windowSpec) {
-            SDL_WindowFlags windowFlags =
-                    SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-            m_Window = SDL_CreateWindow(windowSpec.title.c_str(), windowSpec.width, windowSpec.height, windowFlags);
-            if (!m_Window) {
-                throw std::runtime_error("Failed to create SDL window: " + std::string(SDL_GetError()));
-            }
+    void Window::InitializeWindow(const WindowSpec &windowSpec) {
+        SDL_WindowFlags windowFlags =
+                SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        m_Window = SDL_CreateWindow(windowSpec.title.c_str(), windowSpec.width, windowSpec.height, windowFlags);
+        if (!m_Window) {
+            throw std::runtime_error("Failed to create SDL window: " + std::string(SDL_GetError()));
         }
+    }
 
-        SDL_Window *m_Window{nullptr};
-        std::unique_ptr<AppGraphicsContext> m_GraphicsContext;
-        size_t m_CurrentFrame = 0;
-        bool m_ShouldUpdate = true;
+    void Window::PushLayer(std::shared_ptr<IUpdatableLayer> layer) {
+        m_Layers.push_back(layer);
+    }
 
-        std::vector<std::shared_ptr<IUpdatableLayer>> m_Layers;
+    void Window::PopLayer(std::shared_ptr<IUpdatableLayer> layer) {
+        auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
+        if (it != m_Layers.end()) {
+            m_Layers.erase(it);
+        }
+    }
 
-    private:
-        const inline static std::vector<const char *> s_ValidationLayers = {
-            "VK_LAYER_KHRONOS_validation"
-        };
+    vk::raii::PhysicalDevice & Window::GetPhysicalDevice() {
+        return m_GraphicsContext->GetPhysicalDevice();
+    }
 
-        const inline static std::vector<const char *> s_DeviceExtensions = {
-            vk::KHRSwapchainExtensionName,
-            vk::KHRMapMemory2ExtensionName,
-            vk::EXTMemoryBudgetExtensionName
-        };
+    vk::raii::Device & Window::GetLogicalDevice() {
+        return m_GraphicsContext->GetLogicalDevice();
+    }
 
-    public:
-        template<std::derived_from<IUpdatableLayer> T>
-        std::shared_ptr<T> EmplaceLayer(auto &&... args) {
-            auto layer = std::make_shared<T>(std::forward<decltype(args)>(args)...);
-            PushLayer(layer);
-            return layer;
-        }
+    vk::raii::Queue & Window::GetGraphicsQueue() {
+        return m_GraphicsContext->GetGraphicsQueue();
+    }
 
-        // override all IBasicContext methods
-        SDL_Window *GetWindow() const { return m_Window; }
+    vk::raii::CommandPool & Window::GetCommandPool() {
+        return m_GraphicsContext->GetCommandPool();
+    }
 
-        void PushLayer(std::shared_ptr<IUpdatableLayer> layer) {
-            m_Layers.push_back(layer);
-        }
+    vk::raii::Instance & Window::GetVulkanInstance() {
+        return m_GraphicsContext->GetVulkanInstance();
+    }
 
-        void PopLayer(std::shared_ptr<IUpdatableLayer> layer) {
-            auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
-            if (it != m_Layers.end()) {
-                m_Layers.erase(it);
-            }
-        }
-        vk::raii::PhysicalDevice &GetPhysicalDevice() {
-            return m_GraphicsContext->GetPhysicalDevice();
-        }
-        vk::raii::Device &GetLogicalDevice() {
-            return m_GraphicsContext->GetLogicalDevice();
-        }
-        vk::raii::Queue &GetGraphicsQueue() {
-            return m_GraphicsContext->GetGraphicsQueue();
-        }
-        vk::raii::CommandPool &GetCommandPool() {
-            return m_GraphicsContext->GetCommandPool();
-        }
-        vk::raii::Instance &GetVulkanInstance() {
-            return m_GraphicsContext->GetVulkanInstance();
-        }
-        vma::UniqueAllocator &GetAllocator() {
-            return m_GraphicsContext->GetAllocator();
-        }
-
-    };
+    vma::UniqueAllocator & Window::GetAllocator() {
+        return m_GraphicsContext->GetAllocator();
+    }
 
     Window::Window(const WindowSpec &windowSpec) {
         InitializeWindow(windowSpec);
@@ -560,11 +443,4 @@ namespace EasyGui {
         }
     }
 
-
-
-#undef CreateWindow
-
-    export std::shared_ptr<Window> CreateWindow(const WindowSpec &windowSpec) {
-        return std::make_shared<Window>(windowSpec);
-    }
 }
