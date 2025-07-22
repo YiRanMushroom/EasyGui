@@ -300,6 +300,11 @@ namespace EasyGui {
                 std::this_thread::sleep_for(std::chrono::milliseconds(16));
             }
             DrawFrame();
+
+            for (auto& task: m_MainThreadTasks) {
+                task();
+            }
+            m_MainThreadTasks.clear();
         }
 
         // m_Device.waitIdle();
