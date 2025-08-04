@@ -157,11 +157,11 @@ namespace EasyGui::Vulkan {
         ImageHelper(vk::raii::PhysicalDevice* physicalDevice, vk::raii::Device* logicalDevice,
                     vk::raii::CommandPool* commandPool,
                     vk::raii::Queue* graphicsQueue,
-                    vk::Instance instance,
+                    vk::raii::Instance* instance,
                     vma::UniqueAllocator* allocator)
             : m_PhysicalDevice(physicalDevice), m_LogicalDevice(logicalDevice),
               m_CommandPool(commandPool), m_GraphicsQueue(graphicsQueue),
-              m_Instance(instance), m_Allocator(**allocator) {}
+              m_Instance(*instance), m_Allocator(**allocator) {}
 
         std::pair<vma::UniqueImage, vma::UniqueAllocation>
         CreateImage(
