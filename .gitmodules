@@ -8,5 +8,5 @@
 	branch = docking
 [submodule "vendor/VulkanMemoryAllocator"]
 	path = vendor/VulkanMemoryAllocator
-	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 	branch = master
