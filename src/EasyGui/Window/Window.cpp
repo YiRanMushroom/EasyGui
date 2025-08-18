@@ -3,7 +3,7 @@ module EasyGui.Window;
 import "EasyGui/Lib/Lib.hpp";
 
 namespace EasyGui {
-        inline void ImGuiUseStyleColorHazel() {
+    inline void ImGuiUseStyleColorHazel() {
         auto &colors = ImGui::GetStyle().Colors;
         colors[ImGuiCol_WindowBg] = ImVec4{0.1f, 0.105f, 0.11f, 1.0f};
 
@@ -207,27 +207,27 @@ namespace EasyGui {
         }
     }
 
-    vk::raii::PhysicalDevice & Window::GetPhysicalDevice() {
+    vk::raii::PhysicalDevice &Window::GetPhysicalDevice() {
         return m_GraphicsContext->GetPhysicalDevice();
     }
 
-    vk::raii::Device & Window::GetLogicalDevice() {
+    vk::raii::Device &Window::GetLogicalDevice() {
         return m_GraphicsContext->GetLogicalDevice();
     }
 
-    vk::raii::Queue & Window::GetGraphicsQueue() {
+    vk::raii::Queue &Window::GetGraphicsQueue() {
         return m_GraphicsContext->GetGraphicsQueue();
     }
 
-    vk::raii::CommandPool & Window::GetCommandPool() {
+    vk::raii::CommandPool &Window::GetCommandPool() {
         return m_GraphicsContext->GetCommandPool();
     }
 
-    vk::raii::Instance & Window::GetVulkanInstance() {
+    vk::raii::Instance &Window::GetVulkanInstance() {
         return m_GraphicsContext->GetVulkanInstance();
     }
 
-    vma::UniqueAllocator & Window::GetAllocator() {
+    vma::UniqueAllocator &Window::GetAllocator() {
         return m_GraphicsContext->GetAllocator();
     }
 
@@ -315,7 +315,7 @@ namespace EasyGui {
             }
             DrawFrame();
 
-            for (auto& task: m_MainThreadTasks) {
+            for (auto &task: m_MainThreadTasks) {
                 task();
             }
             m_MainThreadTasks.clear();
@@ -339,11 +339,11 @@ namespace EasyGui {
         OnUpdate();
         ImGui::Render();
 
-        auto& device = m_GraphicsContext->GetLogicalDevice();
-        auto& inFlightFences = m_GraphicsContext->GetInFlightFences();
+        auto &device = m_GraphicsContext->GetLogicalDevice();
+        auto &inFlightFences = m_GraphicsContext->GetInFlightFences();
 
         auto waitForFenceResult = device.waitForFences(*inFlightFences[m_CurrentFrame], vk::True,
-                                                         std::numeric_limits<uint64_t>::max()
+                                                       std::numeric_limits<uint64_t>::max()
         );
 
         if (waitForFenceResult != vk::Result::eSuccess) {
@@ -351,8 +351,8 @@ namespace EasyGui {
             return;
         }
 
-        auto& swapChain = m_GraphicsContext->GetSwapChain();
-        auto& imageAvailableSemaphores = m_GraphicsContext->GetImageAvailableSemaphores();
+        auto &swapChain = m_GraphicsContext->GetSwapChain();
+        auto &imageAvailableSemaphores = m_GraphicsContext->GetImageAvailableSemaphores();
 
         auto [resultAcquireImage, imageIndex] = swapChain.acquireNextImage(
             std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[m_CurrentFrame],
@@ -376,7 +376,7 @@ namespace EasyGui {
         // m_ImageViewDependentRenderTargetsPerFrameBuffer[imageIndex] = std::move(m_DependentRenderTargets);
 
         // m_CommandBufferDependentContexts[m_CurrentFrame].clear();
-        auto& commandBuffers = m_GraphicsContext->GetCommandBuffers();
+        auto &commandBuffers = m_GraphicsContext->GetCommandBuffers();
         commandBuffers[m_CurrentFrame].reset();
 
         vk::CommandBufferBeginInfo beginInfo{
@@ -391,7 +391,7 @@ namespace EasyGui {
             m_GraphicsContext->GetClearColor()
         };
 
-        auto& frameBuffers = m_GraphicsContext->GetSwapChainFramebuffers();
+        auto &frameBuffers = m_GraphicsContext->GetSwapChainFramebuffers();
 
         vk::RenderPassBeginInfo renderPassInfo{
             .pNext = nullptr,
@@ -419,7 +419,7 @@ namespace EasyGui {
 
         commandBuffers[m_CurrentFrame].end();
 
-        auto& renderFinishedSemaphores = m_GraphicsContext->GetRenderFinishedSemaphores();
+        auto &renderFinishedSemaphores = m_GraphicsContext->GetRenderFinishedSemaphores();
 
         vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
         vk::Semaphore waitSemaphores[] = {*imageAvailableSemaphores[m_CurrentFrame]};
@@ -461,5 +461,4 @@ namespace EasyGui {
             ImGui::RenderPlatformWindowsDefault();
         }
     }
-
 }

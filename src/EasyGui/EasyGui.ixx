@@ -11,4 +11,5 @@ export import EasyGui.SoLoud;
 export import EasyGui.Utils.WindowsApi;
 export import EasyGui.Utils.Atomic;
 export import EasyGui.Utils.Image;
+export import EasyGui.Utils.AsyncProvider;
 export import EasyGui.Tools.ThreadPool;

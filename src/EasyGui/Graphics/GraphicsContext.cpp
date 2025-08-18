@@ -9,7 +9,7 @@ namespace EasyGui {
         Init(window);
     }
 
-    void GraphicsContext::Init(SDL_Window* window) {
+    void GraphicsContext::Init(SDL_Window *window) {
         CreateInstance();
         SetupDebugMessenger();
         CreateSurface(window);
@@ -317,7 +317,8 @@ namespace EasyGui {
         return vk::PresentModeKHR::eFifo; // FIFO is guaranteed to be supported
     }
 
-    vk::Extent2D GraphicsContext::ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities, SDL_Window* window) const {
+    vk::Extent2D GraphicsContext::ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
+                                                   SDL_Window *window) const {
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()
 
         ) {
@@ -341,7 +342,7 @@ namespace EasyGui {
         return actualExtent;
     }
 
-    void GraphicsContext::CreateSwapChain(SDL_Window* window) {
+    void GraphicsContext::CreateSwapChain(SDL_Window *window) {
         SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(*m_PhysicalDevice);
 
         auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
@@ -588,7 +589,7 @@ namespace EasyGui {
         }
     }
 
-    void GraphicsContext::RecreateSwapChain(SDL_Window* window) {
+    void GraphicsContext::RecreateSwapChain(SDL_Window *window) {
         m_Device.waitIdle();
 
         CleanupSwapChain();
