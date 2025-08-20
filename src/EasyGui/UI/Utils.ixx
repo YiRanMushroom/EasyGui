@@ -20,7 +20,6 @@ namespace EasyGui::UI {
                 | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-
         // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
         // and handle the pass-thru hole, so we ask Begin() to not render a background.
         // if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
@@ -35,6 +34,8 @@ namespace EasyGui::UI {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::Begin("DockSpace", nullptr, window_flags);
 
+        renderAdditional();
+
         ImGui::PopStyleVar();
 
         ImGui::PopStyleVar(2);
@@ -45,8 +46,6 @@ namespace EasyGui::UI {
             ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
         }
-
-        renderAdditional();
 
         ImGui::End();
     }

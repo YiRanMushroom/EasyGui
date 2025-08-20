@@ -139,6 +139,10 @@ namespace EasyGui {
         vk::raii::Instance &GetVulkanInstance();
 
         vma::UniqueAllocator &GetAllocator();
+
+        [[nodiscard]] AppGraphicsContext& GetGraphicsContext() const {
+            return *m_GraphicsContext;
+        }
     };
 
 

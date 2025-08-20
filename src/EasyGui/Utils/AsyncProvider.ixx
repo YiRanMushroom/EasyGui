@@ -27,6 +27,7 @@ namespace EasyGui {
         }
 
         T &Get() {
+            std::lock_guard lock(m_Mutex);
             if (!m_Value && !m_CompletableFuture) {
                 throw std::runtime_error("Value is not set and no future is available.");
             }
@@ -73,6 +74,7 @@ namespace EasyGui {
             { func() } -> std::convertible_to<T>;
         }
         void SetFuture(F &&func) {
+            std::lock_guard lock(m_Mutex);
             Update();
             m_CompletableFuture = std::make_optional<std::future<T>>(
                 std::async(std::launch::async, std::forward<F>(func)));
@@ -105,5 +107,6 @@ namespace EasyGui {
 
         std::optional<T> m_Value;
         std::optional<std::future<T>> m_CompletableFuture;
+        std::mutex m_Mutex;
     };
 }
