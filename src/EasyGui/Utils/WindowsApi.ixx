@@ -86,6 +86,25 @@ namespace EasyGui::Windows {
         MessageBoxW(NULL, message.data(), title.data(), MB_OK | MB_ICONERROR);
     }
 
+    export void SetClipboardContent(std::wstring_view content) {
+        if (OpenClipboard(NULL)) {
+            EmptyClipboard();
+
+            size_t size = (content.length() + 1) * sizeof(wchar_t);
+            HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, size);
+            if (hGlobal != nullptr) {
+                wchar_t *buffer = static_cast<wchar_t *>(GlobalLock(hGlobal));
+                if (buffer != nullptr) {
+                    memcpy(buffer, content.data(), size);
+                    GlobalUnlock(hGlobal);
+
+                    SetClipboardData(CF_UNICODETEXT, hGlobal);
+                }
+            }
+            CloseClipboard();
+        }
+    }
+
     // RunProcessWithOutput: UTF-8 support
     export std::optional<ProcessOutput> RunProcessWithOutput(const std::wstring_view cmd) {
         HANDLE outRead, outWrite, errRead, errWrite;
