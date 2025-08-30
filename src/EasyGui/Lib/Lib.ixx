@@ -1,3 +1,4 @@
 export module EasyGui.Lib;
 
-#include "Lib.hpp"
+export import EasyGui.LibBasic;
+export import EasyGui.ImGuiExtension;

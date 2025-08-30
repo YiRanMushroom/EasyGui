@@ -3,7 +3,41 @@ export module EasyGui.Tools.ThreadPool;
 import std.compat;
 
 namespace EasyGui {
-    export class ThreadPool {
+    export class IThreadPool {
+    public:
+        virtual ~IThreadPool() = default;
+
+    protected:
+        virtual void EnqueueFunc(std::function<void()> &&task) = 0;
+
+    public:
+        template<typename... Args> requires std::invocable<Args...>
+        void EnqueueDetached(Args &&... args) {
+            std::function<void()> task = [tup = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+                std::apply([]<typename... Tps>(const auto &first, Tps &&... rest) {
+                    first(std::forward<Tps>(rest)...);
+                }, std::move(tup));
+            };
+            EnqueueFunc(std::move(task));
+        }
+
+        template<typename... Args> requires std::invocable<Args...>
+        auto Enqueue(Args &&... args) {
+            using ReturnType = std::invoke_result_t<Args...>;
+            auto task = std::make_shared<std::packaged_task<ReturnType()>>(
+                [tup = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+                    return std::apply([]<typename... Tps>(auto &&first, Tps &&... rest) {
+                        return first(std::forward<Tps>(rest)...);
+                    }, std::move(tup));
+                });
+
+            std::future<ReturnType> res = task->get_future();
+            EnqueueFunc([task]() { (*task)(); });
+            return res;
+        }
+    };
+
+    export class ThreadPool : public IThreadPool {
     public:
         ThreadPool(size_t size = std::jthread::hardware_concurrency() * 2) {
             m_WorkerThreads.reserve(size);
@@ -31,39 +65,13 @@ namespace EasyGui {
             }
         }
 
-        template<typename... Args> requires std::invocable<Args...>
-        void EnqueueDetached(Args &&... args) {
-            std::function<void()> task = [tup = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-                std::apply([]<typename... Tps>(const auto &first, Tps &&... rest) {
-                    first(std::forward<Tps>(rest)...);
-                }, std::move(tup));
-            };
+        void EnqueueFunc(std::function<void()> &&task) override {
             // forward
             {
                 std::lock_guard lock(m_Mutex);
                 m_Tasks.emplace(std::move(task));
             }
             m_Condition.notify_one();
-        }
-
-        template<typename... Args> requires std::invocable<Args...>
-        auto Enqueue(Args &&... args) {
-            using ReturnType = std::invoke_result_t<Args...>;
-            auto task = std::make_shared<std::packaged_task<ReturnType()>>(
-                [tup = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-                    return std::apply([]<typename... Tps>(const auto &first, Tps &&... rest) {
-                        return first(std::forward<Tps>(rest)...);
-                    }, std::move(tup));
-                });
-
-            std::future<ReturnType> res = task->get_future();
-            // forward
-            {
-                std::lock_guard lock(m_Mutex);
-                m_Tasks.emplace([task]() { (*task)(); });
-            }
-            m_Condition.notify_one();
-            return res;
         }
 
         ~ThreadPool() {
@@ -99,4 +107,9 @@ namespace EasyGui {
         std::queue<std::function<void()>> m_Tasks{};
         std::atomic_bool m_ShouldStop{false};
     };
+
+    export IThreadPool* GlobalThreadPool() {
+        static ThreadPool pool{};
+        return &pool;
+    }
 }
