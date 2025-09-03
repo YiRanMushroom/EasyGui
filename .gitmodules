@@ -2,11 +2,14 @@
 	path = vendor/sdl3
 	url = https://github.com/libsdl-org/SDL
 	branch = release-3.2.x
-[submodule "vendor/imgui"]
-	path = vendor/imgui
-	url = https://github.com/YiRanMushroom/imgui
-	branch = docking
 [submodule "vendor/VulkanMemoryAllocator"]
 	path = vendor/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 	branch = master
+[submodule "vendor/VulkanMemoryAllocator-Hpp"]
+	path = vendor/VulkanMemoryAllocator-Hpp
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp
+[submodule "vendor/imgui"]
+	path = vendor/imgui
+	url = https://github.com/YiRanMushroom/imgui
+	branch = docking

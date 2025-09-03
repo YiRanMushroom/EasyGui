@@ -20,8 +20,11 @@ target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES})
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan Vulkan::Headers)
 
-add_subdirectory(vendor/VulkanMemoryAllocator)
-target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator-Hpp VulkanMemoryAllocator)
+add_subdirectory(vendor/VulkanMemoryAllocator-Hpp)
+add_subdirectory(vendor/VulkanMemoryAllocator-Hpp/VulkanMemoryAllocator)
+target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator)
+target_link_libraries(VulkanMemoryAllocator-Hpp INTERFACE VulkanMemoryAllocator)
+target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator-Hpp)
 
 set(SDL_VULKAN ON)
 set(SDL_STATIC ON)
