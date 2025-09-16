@@ -26,4 +26,7 @@ namespace EasyGui {
 
     export template<auto & _Fn>
     constexpr inline auto WrapFnOf = _Wrap_Fn_Impl<_Fn, std::remove_reference_t<decltype(_Fn)>>{};
+
+    export template<auto& _Fn>
+    using WrapFnTypeOf = decltype(WrapFnOf<_Fn>);
 }
