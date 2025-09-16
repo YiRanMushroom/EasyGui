@@ -4,7 +4,8 @@ set(PROJECT_NAME EasyGui)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(${PROJECT_NAME} STATIC)
+add_library(${PROJECT_NAME} STATIC
+        src/EasyGui/Lib/Lib_std_extesions.ixx)
 
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
 file(GLOB_RECURSE MODULE_FILES src/*.ixx src/*.cppm)
