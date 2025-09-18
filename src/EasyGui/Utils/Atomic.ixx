@@ -6,7 +6,81 @@ export import EasyGui.Utils.Flags;
 import EasyGui.Tools.ThreadPool;
 
 namespace EasyGui {
-    export template<typename T>
+    export class SpinLock {
+    public:
+        void lock() {
+            bool expected = false;
+
+            if (!m_Flag.compare_exchange_strong(expected, true, std::memory_order_acquire)) {
+                expected = false;
+                std::this_thread::yield();
+            } else {
+                m_Flag.store(true, std::memory_order_relaxed);
+                return;
+            }
+
+            while (!m_Flag.compare_exchange_strong(expected, true, std::memory_order_relaxed)) {
+                expected = false;
+                std::this_thread::yield();
+            }
+            m_Flag.store(true, std::memory_order_relaxed);
+        }
+
+        void Lock() {
+            lock();
+        }
+
+        void unlock() {
+            m_Flag.store(false, std::memory_order_release);
+        }
+
+        void Unlock() {
+            unlock();
+        }
+
+    private:
+        std::atomic_bool m_Flag{};
+    };
+
+    export class RecursiveSpinLock {
+    public:
+        void lock() {
+            std::thread::id this_id = std::this_thread::get_id();
+            if (m_Owner == this_id) {
+                ++m_RecursionCount;
+                return;
+            }
+
+            m_Mutex.lock();
+            m_Owner = this_id;
+            m_RecursionCount = 1;
+        }
+
+        void Lock() {
+            lock();
+        }
+
+        void unlock() {
+            if (m_Owner != std::this_thread::get_id()) {
+                throw std::system_error(std::make_error_code(std::errc::operation_not_permitted));
+            }
+            if (--m_RecursionCount == 0) {
+                m_Owner = {};
+                m_Mutex.unlock();
+            }
+        }
+
+        void Unlock() {
+            unlock();
+        }
+
+    private:
+        std::thread::id m_Owner{};
+        size_t m_RecursionCount{};
+        SpinLock m_Mutex{};
+    };
+
+    export template<typename T, typename LockType = SpinLock>
     class Atomic {
     public:
         Atomic() = default;
@@ -66,22 +140,22 @@ namespace EasyGui {
         }
 
     private:
-        std::mutex m_Mutex{};
+        LockType m_Mutex{};
         T m_Value;
     };
 
-    export template<typename T, typename... Args>
-    Atomic<T> MakeAtomic(Args &&... args) {
-        return Atomic<T>{std::forward<Args>(args)...};
+    export template<typename T, typename LockType = SpinLock, typename... Args>
+    Atomic<T, LockType> MakeAtomic(Args &&... args) {
+        return Atomic<T, LockType>{std::forward<Args>(args)...};
     }
 
-    export template<typename T>
+    export template<typename T, typename LockType = SpinLock>
     class SharedAtomic;
 
-    export template<typename T>
+    export template<typename T, typename LockType = SpinLock>
     class WeakAtomic;
 
-    template<typename T>
+    template<typename T, typename LockType>
     class SharedAtomic {
     public:
         SharedAtomic() = default;
@@ -90,9 +164,9 @@ namespace EasyGui {
 
         SharedAtomic(SharedAtomic &&) = default;
 
-        SharedAtomic(const std::shared_ptr<Atomic<T>> &atomic) : m_Atomic(atomic) {}
+        SharedAtomic(const std::shared_ptr<Atomic<T, LockType>> &atomic) : m_Atomic(atomic) {}
 
-        SharedAtomic(std::shared_ptr<Atomic<T>> &&atomic) : m_Atomic(std::move(atomic)) {}
+        SharedAtomic(std::shared_ptr<Atomic<T, LockType>> &&atomic) : m_Atomic(std::move(atomic)) {}
 
         explicit operator bool() const {
             return m_Atomic != nullptr;
@@ -102,18 +176,18 @@ namespace EasyGui {
             return m_Atomic != nullptr;
         }
 
-        WeakAtomic<T> ShareWeak() const {
+        WeakAtomic<T, LockType> ShareWeak() const {
             return {m_Atomic};
         }
 
-        Atomic<T>::Proxy GetProxy() {
+        Atomic<T, LockType>::Proxy GetProxy() {
             if (!m_Atomic) {
                 throw std::runtime_error("SharedAtomic is empty");
             }
             return m_Atomic->GetProxy();
         }
 
-        std::optional<typename Atomic<T>::Proxy> TryGetProxy() {
+        std::optional<typename Atomic<T, LockType>::Proxy> TryGetProxy() {
             if (!m_Atomic) {
                 return std::nullopt;
             }
@@ -121,15 +195,15 @@ namespace EasyGui {
         }
 
     private:
-        std::shared_ptr<Atomic<T>> m_Atomic;
+        std::shared_ptr<Atomic<T, LockType>> m_Atomic;
     };
 
-    export template<typename T, typename... Args>
-    SharedAtomic<T> MakeSharedAtomic(Args &&... args) {
-        return SharedAtomic<T>{std::make_shared<Atomic<T>>(std::forward<Args>(args)...)};
+    export template<typename T, typename LockType, typename... Args>
+    SharedAtomic<T, LockType> MakeSharedAtomic(Args &&... args) {
+        return SharedAtomic<T, LockType>{std::make_shared<Atomic<T, LockType>>(std::forward<Args>(args)...)};
     }
 
-    template<typename T>
+    template<typename T, typename LockType>
     class WeakAtomic {
     public:
         WeakAtomic() = default;
@@ -142,23 +216,23 @@ namespace EasyGui {
 
         WeakAtomic(std::weak_ptr<Atomic<T>> &&atomic) : m_Atomic(std::move(atomic)) {}
 
-        SharedAtomic<T> Lock() const {
+        SharedAtomic<T, LockType> Lock() const {
             return {m_Atomic.lock()};
         }
 
     private:
-        std::weak_ptr<Atomic<T>> m_Atomic;
+        std::weak_ptr<Atomic<T, LockType>> m_Atomic;
     };
 
-    export template<typename T>
+    export template<typename T, typename LockType = SpinLock>
     class ARCMutex;
 
-    export template<typename T>
+    export template<typename T, typename LockType = SpinLock>
     class WeakMutex;
 
-    template<typename T>
+    template<typename T, typename LockType>
     struct MutexPair {
-        std::mutex Mutex{};
+        LockType Mutex{};
         T Value;
 
         explicit MutexPair(T &&value) : Value(std::move(value)) {}
@@ -166,10 +240,10 @@ namespace EasyGui {
         MutexPair() = default;
     };
 
-    template<typename T>
+    template<typename T, typename LockType>
     class ReadProxy {
     private:
-        MutexPair<T> *m_Pair{};
+        MutexPair<T, LockType> *m_Pair{};
 
     public:
         ReadProxy() = delete;
@@ -183,7 +257,7 @@ namespace EasyGui {
         ReadProxy &operator=(ReadProxy &&other) = delete;
 
     public:
-        ReadProxy(MutexPair<T> &pair) : m_Pair(&pair) {
+        ReadProxy(MutexPair<T, LockType> &pair) : m_Pair(&pair) {
             m_Pair->Mutex.lock();
         }
 
@@ -225,20 +299,20 @@ namespace EasyGui {
         }
     };
 
-    template<typename T>
+    template<typename T, typename LockType>
     class ARCMutex {
-        friend class WeakMutex<T>;
+        friend class WeakMutex<T, LockType>;
 
     public:
         using value_type = T;
-        using stored_type = std::shared_ptr<MutexPair<T>>;
+        using stored_type = std::shared_ptr<MutexPair<T, LockType>>;
 
-        ARCMutex(DefaultConstructed) : m_Ptr(std::make_shared<MutexPair<T>>()) {}
+        ARCMutex(DefaultConstructed) : m_Ptr(std::make_shared<MutexPair<T, LockType>>()) {}
         explicit ARCMutex(EmptyConstructed) : m_Ptr(nullptr) {}
 
         template<typename... Args>
         explicit ARCMutex(ForwardConstructorParameters, Args &&... args)
-            : m_Ptr(std::make_shared<MutexPair<T>>(T{std::forward<Args>(args)...})) {}
+            : m_Ptr(std::make_shared<MutexPair<T, LockType>>(T{std::forward<Args>(args)...})) {}
 
     public:
         ARCMutex(const ARCMutex &) = default;
@@ -260,11 +334,11 @@ namespace EasyGui {
             return func(value);
         }
 
-        ReadProxy<T> Read() {
-            return ReadProxy<T>{*m_Ptr};
+        ReadProxy<T, LockType> Read() {
+            return ReadProxy<T, LockType>{*m_Ptr};
         }
 
-        WeakMutex<T> ShareWeak() const {
+        WeakMutex<T, LockType> ShareWeak() const {
             return {m_Ptr};
         }
 
@@ -287,13 +361,13 @@ namespace EasyGui {
         stored_type m_Ptr;
     };
 
-    template<typename T>
+    template<typename T, typename LockType>
     class WeakMutex {
-        friend class ARCMutex<T>;
+        friend class ARCMutex<T, LockType>;
 
     public:
         using value_type = T;
-        using stored_type = std::weak_ptr<MutexPair<T>>;
+        using stored_type = std::weak_ptr<MutexPair<T, LockType>>;
 
     public:
         WeakMutex() = default;
@@ -302,7 +376,7 @@ namespace EasyGui {
 
         WeakMutex &operator=(const WeakMutex &) = default;
 
-        ARCMutex<T> Lock() const {
+        ARCMutex<T, LockType> Lock() const {
             return {m_Ptr.lock()};
         }
 
