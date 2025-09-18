@@ -4,6 +4,7 @@ import std.compat;
 
 export import EasyGui.Utils.Flags;
 import EasyGui.Tools.ThreadPool;
+import EasyGui.std_extensions;
 
 namespace EasyGui {
     export class SpinLock {
@@ -89,9 +90,11 @@ namespace EasyGui {
 
         Atomic(Atomic &&) = delete;
 
-        Atomic(T &&value) : m_Value(std::move(value)) {}
+        Atomic(T &&value) : m_Value(std::move(value)) {
+        }
 
-        Atomic(const T &value) : m_Value(value) {}
+        Atomic(const T &value) : m_Value(value) {
+        }
 
         Atomic &operator=(auto &&value) {
             this->GetProxy().Set(std::forward<decltype(value)>(value));
@@ -100,7 +103,9 @@ namespace EasyGui {
 
         struct Proxy {
             Atomic *m_Atomic;
-            Proxy(Atomic &atomic) : m_Atomic(&atomic) {}
+
+            Proxy(Atomic &atomic) : m_Atomic(&atomic) {
+            }
 
             T &operator*() {
                 return m_Atomic->m_Value;
@@ -164,9 +169,11 @@ namespace EasyGui {
 
         SharedAtomic(SharedAtomic &&) = default;
 
-        SharedAtomic(const std::shared_ptr<Atomic<T, LockType>> &atomic) : m_Atomic(atomic) {}
+        SharedAtomic(const std::shared_ptr<Atomic<T, LockType>> &atomic) : m_Atomic(atomic) {
+        }
 
-        SharedAtomic(std::shared_ptr<Atomic<T, LockType>> &&atomic) : m_Atomic(std::move(atomic)) {}
+        SharedAtomic(std::shared_ptr<Atomic<T, LockType>> &&atomic) : m_Atomic(std::move(atomic)) {
+        }
 
         explicit operator bool() const {
             return m_Atomic != nullptr;
@@ -212,9 +219,11 @@ namespace EasyGui {
 
         WeakAtomic(WeakAtomic &&) = default;
 
-        WeakAtomic(const std::weak_ptr<Atomic<T>> &atomic) : m_Atomic(atomic) {}
+        WeakAtomic(const std::weak_ptr<Atomic<T>> &atomic) : m_Atomic(atomic) {
+        }
 
-        WeakAtomic(std::weak_ptr<Atomic<T>> &&atomic) : m_Atomic(std::move(atomic)) {}
+        WeakAtomic(std::weak_ptr<Atomic<T>> &&atomic) : m_Atomic(std::move(atomic)) {
+        }
 
         SharedAtomic<T, LockType> Lock() const {
             return {m_Atomic.lock()};
@@ -235,7 +244,8 @@ namespace EasyGui {
         LockType Mutex{};
         T Value;
 
-        explicit MutexPair(T &&value) : Value(std::move(value)) {}
+        explicit MutexPair(T &&value) : Value(std::move(value)) {
+        }
 
         MutexPair() = default;
     };
@@ -282,19 +292,19 @@ namespace EasyGui {
             return Get();
         }
 
-        T* operator->() {
+        T *operator->() {
             return &Get();
         }
 
-        const T* operator->() const {
+        const T *operator->() const {
             return &Get();
         }
 
-        T& operator*() {
+        T &operator*() {
             return Get();
         }
 
-        const T& operator*() const {
+        const T &operator*() const {
             return Get();
         }
     };
@@ -307,12 +317,16 @@ namespace EasyGui {
         using value_type = T;
         using stored_type = std::shared_ptr<MutexPair<T, LockType>>;
 
-        ARCMutex(DefaultConstructed) : m_Ptr(std::make_shared<MutexPair<T, LockType>>()) {}
-        explicit ARCMutex(EmptyConstructed) : m_Ptr(nullptr) {}
+        ARCMutex(DefaultConstructed) : m_Ptr(std::make_shared<MutexPair<T, LockType>>()) {
+        }
+
+        explicit ARCMutex(EmptyConstructed) : m_Ptr(nullptr) {
+        }
 
         template<typename... Args>
         explicit ARCMutex(ForwardConstructorParameters, Args &&... args)
-            : m_Ptr(std::make_shared<MutexPair<T, LockType>>(T{std::forward<Args>(args)...})) {}
+            : m_Ptr(std::make_shared<MutexPair<T, LockType>>(T{std::forward<Args>(args)...})) {
+        }
 
     public:
         ARCMutex(const ARCMutex &) = default;
@@ -350,9 +364,8 @@ namespace EasyGui {
             return HasValue();
         }
 
-        template<typename Func>
-        auto DeferredSet(Func &&func, IThreadPool *pool = GlobalThreadPool()) {
-            return pool->Enqueue([self = *this, provider = std::forward<Func>(func)]() mutable {
+        auto DeferredSet(FnExact<T()> auto &&func, IThreadPool *pool = GlobalThreadPool()) {
+            return pool->Enqueue([self = *this, provider = std::forward<decltype(func)>(func)]() mutable {
                 self = provider();
             });
         }
