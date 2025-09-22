@@ -364,7 +364,7 @@ namespace EasyGui {
             return HasValue();
         }
 
-        auto DeferredSet(FnExact<T()> auto &&func, IThreadPool *pool = GlobalThreadPool()) {
+        auto DeferredSet(Fn<T()> auto &&func, IThreadPool *pool = GlobalThreadPool()) {
             return pool->Enqueue([self = *this, provider = std::forward<decltype(func)>(func)]() mutable {
                 self = provider();
             });

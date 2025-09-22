@@ -30,50 +30,93 @@ namespace EasyGui {
     export template<auto & _Fn>
     using WrapFnTypeOf = decltype(WrapFnOf<_Fn>);
 
-    template<typename Source, typename Target>
-    struct _Fn_Like_Impl {
-        static_assert(std::is_function_v<Target>, "Target must be a function type");
-        constexpr static bool value = false;
+    // template<typename Source, typename Target>
+    // struct _Fn_Like_Impl {
+    //     static_assert(std::is_function_v<Target>, "Target must be a function type");
+    //     constexpr static bool value = false;
+    // };
+    //
+    // template<typename Source, typename Ret, typename... Args>
+    // struct _Fn_Like_Impl<Source, Ret(Args...)> {
+    //     constexpr static bool value = requires(Source s, Args... args) {
+    //         { s(std::forward<Args>(args)...) } -> std::same_as<Ret>;
+    //     };
+    // };
+    //
+    // export template<typename Source, typename Target>
+    // concept FnLike = _Fn_Like_Impl<Source, Target>::value;
+    //
+    // template<typename Target>
+    // struct OneStepImplicitCast {
+    //     template<std::same_as<Target> T>
+    //     operator T() const;
+    // };
+    //
+    // template<typename Target>
+    // struct OneStepImplicitCast<Target &> {
+    //     template<typename T>
+    //     operator const T&() const = delete;
+    //
+    //     template<std::same_as<Target> T>
+    //     operator T &() const;
+    // };
+    //
+    // template<typename Target>
+    // struct OneStepImplicitCast<Target &&> {
+    //     template<std::same_as<Target> T>
+    //     operator T &&() const;
+    // };
+    //
+    // template<typename Target>
+    // struct OneStepImplicitCast<const Target &> {
+    //     template<std::same_as<Target> T>
+    //     operator const T&() const;
+    // };
+    //
+    // template<typename Target>
+    // struct OneStepImplicitCast<const Target &&> {
+    //     template<std::same_as<Target> T>
+    //     operator const T&&() const;
+    // };
+    //
+    // template<typename Source, typename Target>
+    // struct _Fn_Exact_Impl {
+    //     static_assert(std::is_function_v<Target>, "Target must be a function type");
+    //     constexpr static bool value = false;
+    // };
+    //
+    // template<typename Source, typename Ret, typename... Args>
+    // struct _Fn_Exact_Impl<Source, Ret(Args...)> {
+    //     constexpr static bool value = requires(Source s, Args... args) {
+    //         { s(OneStepImplicitCast<Args>{}...) } -> std::same_as<Ret>;
+    //     };
+    // };
+    //
+    // export template<typename Source, typename Target>
+    // concept FnExact = _Fn_Exact_Impl<Source, Target>::value;
+    //
+    // static_assert(FnExact<void(int), void(int)> == true);
+    // static_assert(FnExact<void(int &), void(int)> == false);
+    // static_assert(FnExact<void(int), void(int &)> == false);
+    // static_assert(FnExact<void(int &), void(int &)> == true);
+    // static_assert(FnExact<void(const int &), void(int)> == true);
+    // static_assert(FnExact<void(int), void(const int &)> == true);
+    //
+    // static_assert(FnExact<decltype([](int &) {
+    // }), void(int)> == false);
+
+    template<typename It, typename Func>
+    struct _Fn_Impl {
+        static_assert(false, "Not a function type");
     };
 
-    template<typename Source, typename Ret, typename... Args>
-    struct _Fn_Like_Impl<Ret(Args...), Source> {
-        constexpr static bool value = requires(Source s, Args... args) {
-            { s(std::forward<Args>(args)...) } -> std::same_as<Ret>;
+    template<typename It, typename Ret, typename... Args>
+    struct _Fn_Impl<It, Ret(Args...)> {
+        constexpr static bool value = requires(It it, Args... args) {
+            { it(std::forward<Args>(args)...) } -> std::same_as<Ret>;
         };
     };
 
-    export template<typename Source, typename Target>
-    concept FnLike = _Fn_Like_Impl<Source, Target>::value;
-
-    template<typename Target>
-    struct OneStepImplicitCast {
-        template<typename OtherType>
-        explicit operator OtherType() = delete;
-
-        operator Target() const;
-    };
-
-    template<typename Source, typename Target>
-    struct _Fn_Exact_Impl {
-        static_assert(std::is_function_v<Target>, "Target must be a function type");
-        constexpr static bool value = false;
-    };
-
-    template<typename Source, typename Ret, typename... Args>
-    struct _Fn_Exact_Impl<Ret(Args...), Source> {
-        constexpr static bool value = requires(Source s, Args... args) {
-            { s(OneStepImplicitCast<Args>{}...) } -> std::same_as<Ret>;
-        };
-    };
-
-    export template<typename Source, typename Target>
-    concept FnExact = _Fn_Exact_Impl<Target, Source>::value;
-
-    static_assert(FnExact<void(*)(int), void(int)> == true);
-    static_assert(FnExact<void(int), void(*)(int &)> == false);
-    static_assert(FnExact<void(int), decltype([](int &) {
-    })> == false);
-    static_assert(FnExact<decltype([](int &) {
-    }), void(int &)> == true);
+    export template<typename It, typename Func>
+    concept Fn = _Fn_Impl<It, Func>::value;
 }
