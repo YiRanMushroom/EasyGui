@@ -12,19 +12,17 @@ namespace EasyGui {
         void lock() {
             bool expected = false;
 
-            if (!m_Flag.compare_exchange_strong(expected, true, std::memory_order_acquire)) {
-                expected = false;
+        retry:
+            while (m_Flag.load(std::memory_order_relaxed)) {
                 std::this_thread::yield();
-            } else {
-                m_Flag.store(true, std::memory_order_relaxed);
-                return;
             }
 
-            while (!m_Flag.compare_exchange_strong(expected, true, std::memory_order_relaxed)) {
+            if (!m_Flag.compare_exchange_strong(expected, true, std::memory_order_relaxed)) {
                 expected = false;
                 std::this_thread::yield();
+                goto retry;
             }
-            m_Flag.store(true, std::memory_order_relaxed);
+            m_Flag.store(true, std::memory_order_acquire);
         }
 
         void Lock() {
